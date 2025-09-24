@@ -1,0 +1,46 @@
+/* Full screen wrapper */
+.dashboard-wrapper {
+  display: flex;
+  height: 100vh; /* full viewport height */
+  width: 100vw;  /* full viewport width */
+  font-family: Arial, sans-serif;
+  background-color: #f5f7fa;
+}
+
+/* Sidebar fixed width */
+.sidebar {
+  width: 220px;
+  flex-shrink: 0; /* prevent shrinking */
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+}
+
+/* Main content fills remaining space */
+.dashboard-main {
+  margin-left: 220px; /* leave space for sidebar */
+  flex: 1;
+  padding: 30px;
+  height: 100vh; /* full height */
+  overflow-y: auto; /* scroll if content overflows */
+}
+
+/* Module card styling */
+.module-card {
+  background-color: #ffffff;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+  margin-bottom: 20px;
+}
+
+.module-card h2 {
+  margin-bottom: 10px;
+  color: #1b263b;
+}
+
+.module-card ul {
+  list-style: disc;
+  padding-left: 20px;
+}
