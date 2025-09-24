@@ -1,67 +1,56 @@
-import React from "react";
-import "./devices.css";
+// src/components/DeviceList.jsx
+import React, { useState } from "react";
+import "./DeviceList.css"; // External CSS for Devices
 
-function Group3Devices() {
-  const devices = [
-    {
-      name: "Workstation-01",
-      type: "PC",
-      ip: "192.168.1.10",
-      status: "Online",
-      description: "Finance department workstation",
-    },
-    {
-      name: "Laptop-Dev-02",
-      type: "Laptop",
-      ip: "192.168.1.22",
-      status: "Offline",
-      description: "Developer laptop, currently offline",
-    },
-    {
-      name: "Server-DB-01",
-      type: "Server",
-      ip: "192.168.1.5",
-      status: "Online",
-      description: "Database server hosting internal DB",
-    },
-    {
-      name: "Printer-HR-01",
-      type: "Printer",
-      ip: "192.168.1.40",
-      status: "Online",
-      description: "HR department network printer",
-    },
-  ];
+function DeviceList({ devices }) {
+  const [expandedId, setExpandedId] = useState(null);
+
+  const toggleExpand = (id) => {
+    setExpandedId(expandedId === id ? null : id);
+  };
+
+  const statusColor = (status) => {
+    switch(status?.toLowerCase()) {
+      case "working": return "#4CAF50";
+      case "offline": return "#F44336";
+      case "sleep": return "#FF9800";
+      case "online": return "#4CAF50";
+      default: return "#607D8B";
+    }
+  };
 
   return (
-    <div className="devices-module">
-      <h2>Network Devices</h2>
-      <table className="devices-table">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>IP Address</th>
-            <th>Status</th>
-            <th>Description</th>
-          </tr>
-        </thead>
-        <tbody>
-          {devices.map((device, index) => (
-            <tr key={index}>
-              <td>{device.name}</td>
-              <td>{device.type}</td>
-              <td>{device.ip}</td>
-              <td className={device.status === "Online" ? "online" : "offline"}>
-                {device.status}
-              </td>
-              <td>{device.description}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="device-list">
+      {devices.map((device) => (
+        <div 
+          key={device.id} 
+          className={`device-card ${expandedId === device.id ? "expanded" : ""}`}
+          onClick={() => toggleExpand(device.id)}
+        >
+          <div className="device-header">
+            <h3>{device.name}</h3>
+            <span className="status" style={{ backgroundColor: statusColor(device.status) }}>
+              {device.status}
+            </span>
+          </div>
+          {expandedId === device.id && (
+            <div className="device-body">
+              <p><strong>Type:</strong> {device.type}</p>
+              <p><strong>IP:</strong> {device.ip}</p>
+              <p><strong>Department:</strong> {device.department}</p>
+              {device.remoteActions?.length > 0 && (
+                <div className="actions">
+                  {device.remoteActions.map((action, idx) => (
+                    <button key={idx} className="action-btn">{action}</button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      ))}
     </div>
   );
 }
 
-export default Group3Devices;
+export default DeviceList;

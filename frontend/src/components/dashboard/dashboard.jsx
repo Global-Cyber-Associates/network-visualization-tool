@@ -1,101 +1,90 @@
-// src/components/Dashboard.jsx
 import React, { useState } from "react";
 import Sidebar from "../navigation/sidenav.jsx";
+import devicesData from "../devices/devices.js"; // Import your devices/sampleData
 import "./dashboard.css";
 
 function Dashboard() {
   const [active, setActive] = useState(1);
 
+  const statusColor = (status) => {
+    switch (status?.toLowerCase()) {
+      case "working": return "#4CAF50";
+      case "offline": return "#F44336";
+      case "sleep": return "#FF9800";
+      case "online": return "#4CAF50";
+      default: return "#607D8B";
+    }
+  };
+
+  const renderCards = (items, type) => (
+    <div className="grid-container">
+      {items.map((item) => (
+        <div key={item.id} className="card">
+          <div
+            className="card-header"
+          >
+            {item.icon} {item.name || item.title || item.type}
+          </div>
+          <div className="card-body">
+            {type === "visualizer" && (
+              <>
+                <p><strong>IP:</strong> {item.ip}</p>
+                <p><strong>Status:</strong> <span style={{ color: statusColor(item.status) }}>{item.status}</span></p>
+                <p><strong>Vulnerable:</strong> {item.vulnerable ? "Yes" : "No"}</p>
+              </>
+            )}
+            {type === "devices" && (
+              <>
+                <p><strong>Type:</strong> {item.type}</p>
+                <p><strong>IP:</strong> {item.ip}</p>
+                <p><strong>Status:</strong> <span style={{ color: statusColor(item.status) }}>{item.status}</span></p>
+                <p><strong>Dept:</strong> {item.department}</p>
+                {item.remoteActions?.length > 0 && (
+                  <div className="actions">
+                    {item.remoteActions.map((action, idx) => (
+                      <button key={idx} className="action-btn">{action}</button>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+            {type === "logs" && (
+              <>
+                {item.user && <p><strong>User:</strong> {item.user}</p>}
+                {item.device && <p><strong>Device:</strong> {item.device}</p>}
+                {item.time && <p><strong>Time:</strong> {item.time}</p>}
+                <p><strong>Status:</strong> {item.status}</p>
+              </>
+            )}
+            {type === "issues" && (
+              <>
+                <p><strong>Device:</strong> {item.device}</p>
+                <p><strong>Severity:</strong> {item.severity}</p>
+              </>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
   const renderContent = () => {
     switch (active) {
-      case 1:
-        return (
-          <div className="module-card">
-            <h2>Authentication</h2>
-            <p>Login using organization email. Single Sign-On and security enforced.</p>
-          </div>
-        );
-      case 2:
-        return (
-          <div className="module-card">
-            <h2>Role Based Access</h2>
-            <p>Assign roles to users and restrict access to features accordingly.</p>
-          </div>
-        );
-      case 3:
-        return (
-          <div className="module-card">
-            <h2>Devices</h2>
-            <ul>
-              <li>Detect all devices</li>
-              <li>Classify device types</li>
-              <li>Detect new devices</li>
-              <li>Realtime status: Online / Offline</li>
-            </ul>
-          </div>
-        );
-      case 4:
-        return (
-          <div className="module-card">
-            <h2>Ports & Vulnerabilities</h2>
-            <ul>
-              <li>List open ports and map to devices</li>
-              <li>Detect vulnerabilities and list CVEs</li>
-            </ul>
-          </div>
-        );
-      case 5:
-        return (
-          <div className="module-card">
-            <h2>Logs & Activity</h2>
-            <ul>
-              <li>Realtime logs analyzer</li>
-              <li>Malicious activity detection</li>
-            </ul>
-          </div>
-        );
-      case 6:
-        return (
-          <div className="module-card">
-            <h2>Endpoint Management</h2>
-            <ul>
-              <li>Manage endpoints</li>
-              <li>Isolate computers</li>
-              <li>Kill system processes (task manager)</li>
-            </ul>
-          </div>
-        );
-      case 7:
-        return (
-          <div className="module-card">
-            <h2>Network Topology</h2>
-            <ul>
-              <li>Visualize network topology</li>
-              <li>Render device images</li>
-              <li>Change color when suspicious</li>
-              <li>Draggable layout to reflect office setup</li>
-            </ul>
-          </div>
-        );
-      case 8:
-        return (
-          <div className="module-card">
-            <h2>Issues</h2>
-            <ul>
-              <li>Agents not responding</li>
-              <li>No agents installed on new device</li>
-            </ul>
-          </div>
-        );
-      default:
-        return <div>Select a module</div>;
+      case 1: return renderCards(devicesData.visualizer, "visualizer");
+      case 2: return renderCards(devicesData.devices, "devices"); // <-- Use imported devices
+      case 3: return renderCards(devicesData.logs, "logs");
+      case 4: return renderCards(devicesData.issues, "issues");
+      case 5: return renderCards(devicesData.upgrade, "logs");
+      default: return <div>Select a module</div>;
     }
   };
 
   return (
     <div className="dashboard-wrapper">
       <Sidebar active={active} setActive={setActive} />
-      <main className="dashboard-main">{renderContent()}</main>
+      <main className="dashboard-main">
+        {renderContent()}
+      </main>
     </div>
   );
 }

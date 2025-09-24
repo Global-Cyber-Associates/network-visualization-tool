@@ -1,37 +1,61 @@
-.devices-module {
-  background: #ffffff;
-  padding: 25px;
+.device-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.device-card {
+  background-color: #272c3a;
+  border-radius: 10px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 0.2s, background-color 0.2s;
+}
+
+.device-card:hover {
+  transform: translateY(-3px);
+  background-color: #333a4a;
+}
+
+.device-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.device-body {
+  padding: 10px 20px;
+  font-size: 0.95rem;
+  color: #cfd8dc;
+}
+
+.status {
+  padding: 4px 10px;
   border-radius: 12px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+  color: #fff;
+  font-weight: 500;
 }
 
-.devices-module h2 {
-  margin-bottom: 15px;
-  color: #1b263b;
+.actions {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
-.devices-table {
-  width: 100%;
-  border-collapse: collapse;
+.action-btn {
+  background-color: #4CAF50;
+  border: none;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
 }
 
-.devices-table th,
-.devices-table td {
-  padding: 12px;
-  text-align: left;
-  border-bottom: 1px solid #ddd;
-}
-
-.devices-table tr:hover {
-  background-color: #f0f4f8;
-}
-
-.online {
-  color: green;
-  font-weight: bold;
-}
-
-.offline {
-  color: red;
-  font-weight: bold;
+.action-btn:hover {
+  background-color: #45a049;
 }

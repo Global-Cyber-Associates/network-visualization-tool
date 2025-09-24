@@ -4,14 +4,11 @@ import "./sidenav.css";
 
 function Sidebar({ active, setActive }) {
   const navItems = [
-    { number: 1, label: "Authentication" },
-    { number: 2, label: "Role Based Access" },
-    { number: 3, label: "Devices" },
-    { number: 4, label: "Ports & Vulnerabilities" },
-    { number: 5, label: "Logs & Activity" },
-    { number: 6, label: "Endpoint Management" },
-    { number: 7, label: "Network Topology" },
-    { number: 8, label: "Issues" },
+    { number: 1, label: "Visualizer" },
+    { number: 2, label: "Devices" },
+    { number: 3, label: "Logs & Activity" },
+    { number: 4, label: "Issues" },
+    { number: 5, label: "Upgrade" }
   ];
 
   return (
