@@ -1,16 +1,17 @@
-/* Full height and width layout */
-.dashboard-container {
-  display: flex;
-  height: 100vh; /* full viewport height */
-  width: 100vw;  /* full viewport width */
-  overflow: hidden;
-  background-color: #0b1e2d; /* background for dashboard */
-  color: #a8dadc; /* text color */
-  font-family: sans-serif;
+.dashboard-page {
+  padding: 20px;
+  color: #ffffff; /* text color */
 }
-/* Main content area */
-.dashboard-content {
-  flex: 1; /* take remaining space */
-  padding: 30px;
-  overflow-y: auto; /* scroll if content overflows */
+
+.dashboard-page h1 {
+  font-size: 28px;
+  margin-bottom: 15px;
+  color: #a8dadc; /* accent from your theme */
+}
+
+.dashboard-page p {
+  font-size: 16px;
+  line-height: 1.6;
+  color: #e0e0e0;
+  max-width: 800px; /* keeps text readable */
 }
