@@ -5,8 +5,8 @@ import Sidebar from "./components/navigation/sidenav.jsx";
 import Dashboard from "./components/dashboard/dashboard.jsx";
 import Visualizer from "./components/visualizer/visualizer.jsx";
 import Devices from "./components/devices/devices.jsx";
-import Logs from "./components/logs/Logs.jsx";
-import Issues from "./components/issues/Issues.jsx";
+import Logs from "./components/Logs/logs.jsx";
+import Issues from "./components/issues/issues.jsx";
 import Features from "./components/Features/features.jsx";
 
 function App() {

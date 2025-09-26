@@ -1,0 +1,77 @@
+.issues-container {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin-left: 240px; /* for sidebar offset */
+  padding: 20px;
+  min-height: 100vh;
+  background-color: #f4f6f8;
+  box-sizing: border-box;
+}
+
+.issues-title {
+  text-align: center;
+  margin-bottom: 30px;
+  color: #222;
+}
+
+.issues-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.issue-card {
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.issue-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+}
+
+.issue-icon {
+  font-size: 40px;
+  margin-bottom: 10px;
+}
+
+.issue-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: bold;
+  text-align: center;
+}
+
+.issue-device, .issue-time {
+  font-size: 12px;
+  margin-top: 5px;
+  opacity: 0.9;
+}
+
+/* Severity Colors */
+.severity-Critical {
+  background: linear-gradient(135deg, #d00000, #9d0208);
+}
+
+.severity-High {
+  background: linear-gradient(135deg, #e63946, #d62828);
+}
+
+.severity-Medium {
+  background: linear-gradient(135deg, #ffba08, #faa307);
+  color: #222;
+}
+
+.severity-Warning {
+  background: linear-gradient(135deg, #ffdd57, #fcbf49);
+  color: #222;
+}
+
+.severity-Low {
+  background: linear-gradient(135deg, #4cc9f0, #4361ee);
+}
