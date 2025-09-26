@@ -1,0 +1,61 @@
+.device-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.device-card {
+  background-color: #272c3a;
+  border-radius: 10px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 0.2s, background-color 0.2s;
+}
+
+.device-card:hover {
+  transform: translateY(-3px);
+  background-color: #333a4a;
+}
+
+.device-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.device-body {
+  padding: 10px 20px;
+  font-size: 0.95rem;
+  color: #cfd8dc;
+}
+
+.status {
+  padding: 4px 10px;
+  border-radius: 12px;
+  color: #fff;
+  font-weight: 500;
+}
+
+.actions {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.action-btn {
+  background-color: #4CAF50;
+  border: none;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.action-btn:hover {
+  background-color: #45a049;
+}

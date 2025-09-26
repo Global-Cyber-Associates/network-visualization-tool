@@ -1,0 +1,31 @@
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 220px;        /* Sidebar width */
+  height: 100vh;       /* Full height */
+  background: #1b263b; /* Your dark theme color */
+  color: white;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+}
+
+.sidebar li {
+  margin: 15px 0;
+}
+
+.sidebar li a {
+  text-decoration: none;
+  color: #a8dadc;
+  font-size: 16px;
+}
+
+.sidebar li.active a {
+  font-weight: bold;
+  color: #fff;
+}

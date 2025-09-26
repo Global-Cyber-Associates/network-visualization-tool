@@ -1,0 +1,17 @@
+.dashboard-page {
+  padding: 20px;
+  color: #ffffff; /* text color */
+}
+
+.dashboard-page h1 {
+  font-size: 28px;
+  margin-bottom: 15px;
+  color: #a8dadc; /* accent from your theme */
+}
+
+.dashboard-page p {
+  font-size: 16px;
+  line-height: 1.6;
+  color: #e0e0e0;
+  max-width: 800px; /* keeps text readable */
+}
