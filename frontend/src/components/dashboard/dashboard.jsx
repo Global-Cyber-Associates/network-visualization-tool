@@ -1,14 +1,17 @@
+// src/components/Issues.jsx
 import React from "react";
-import "./dashboard.css"; // import external CSS
 
 const Dashboard = () => {
   return (
-    <div className="dashboard-page">
+    <div style={{
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      height: "100vh",
+      fontFamily: "Arial, sans-serif",
+      color: "#0077b6"
+    }}>
       <h1>Dashboard</h1>
-      <p>
-        Welcome to the dashboard page. The sidebar stays fixed on the left and
-        this content adjusts properly to the right.
-      </p>
     </div>
   );
 };

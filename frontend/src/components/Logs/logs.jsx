@@ -1,8 +1,7 @@
-// src/components/Devices.jsx
+// src/components/Logs.jsx
 import React from "react";
-import Sidebar from "../navigation/sidenav";
 
-const Features = () => {
+const Logs = () => {
   return (
     <div style={{
       display: "flex",
@@ -12,9 +11,9 @@ const Features = () => {
       fontFamily: "Arial, sans-serif",
       color: "#0077b6"
     }}>
-      <h1>Features</h1>
+      <h1>Logs & Activity</h1>
     </div>
   );
 };
 
-export default Features;
+export default Logs;

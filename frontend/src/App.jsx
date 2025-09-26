@@ -7,6 +7,7 @@ import Visualizer from "./components/visualizer/visualizer.jsx";
 import Devices from "./components/devices/devices.jsx";
 import Logs from "./components/logs/Logs.jsx";
 import Issues from "./components/issues/Issues.jsx";
+import Features from "./components/Features/features.jsx";
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
             <Route path="/devices" element={<Devices />} />
             <Route path="/logs" element={<Logs />} />
             <Route path="/issues" element={<Issues />} />
+            <Route path="/features" element={<Features />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>
