@@ -1,7 +1,8 @@
 // src/components/Devices.jsx
 import React from "react";
+import Sidebar from "../navigation/sidenav";
 
-const Devices = () => {
+const Features = () => {
   return (
     <div style={{
       display: "flex",
@@ -11,9 +12,10 @@ const Devices = () => {
       fontFamily: "Arial, sans-serif",
       color: "#0077b6"
     }}>
-      <h1>Devices</h1>
+    <Sidebar />
+      <h1>Features</h1>
     </div>
   );
 };
 
-export default Devices;
+export default Features;

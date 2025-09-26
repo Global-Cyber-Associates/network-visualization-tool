@@ -1,75 +1,16 @@
-/* Dashboard wrapper */
-.dashboard-wrapper {
+/* Full height and width layout */
+.dashboard-container {
   display: flex;
-  height: 100vh;
-  width: 100vw;
-  font-family: "Segoe UI", Arial, sans-serif;
-  background-color: #12161f;
-  color: #e0e0e0;
+  height: 100vh; /* full viewport height */
+  width: 100vw;  /* full viewport width */
   overflow: hidden;
+  background-color: #0b1e2d; /* background for dashboard */
+  color: #a8dadc; /* text color */
+  font-family: sans-serif;
 }
-
 /* Main content area */
-.dashboard-main {
-  margin-left: 220px; /* Sidebar width */
-  flex: 1;
+.dashboard-content {
+  flex: 1; /* take remaining space */
   padding: 30px;
-  overflow-y: auto;
-  background-color: #1e1e2f;
-}
-
-/* Grid layout for cards */
-.grid-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
-}
-
-/* Card styling */
-.card {
-  background-color: #1b1f2a;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.6);
-  transition: transform 0.2s, background-color 0.2s;
-}
-
-.card:hover {
-  transform: translateY(-5px);
-  background-color: #272c3a;
-}
-
-/* Card header */
-.card-header {
-  font-weight: 600;
-  font-size: 1rem;
-  padding-bottom: 10px;
-}
-
-/* Card body */
-.card-body {
-  font-size: 0.95rem;
-  color: #cfd8dc;
-}
-
-/* Remote action buttons */
-.actions {
-  margin-top: 10px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.action-btn {
-  background-color: #4CAF50;
-  border: none;
-  color: white;
-  padding: 5px 10px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.85rem;
-}
-
-.action-btn:hover {
-  background-color: #45a049;
+  overflow-y: auto; /* scroll if content overflows */
 }

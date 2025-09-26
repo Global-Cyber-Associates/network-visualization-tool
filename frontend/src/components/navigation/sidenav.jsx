@@ -1,32 +1,38 @@
 // src/navigation/Sidebar.jsx
 import React from "react";
+import { NavLink } from "react-router-dom";
 import "./sidenav.css";
 
-function Sidebar({ active, setActive }) {
+const Sidebar = () => {
   const navItems = [
-    { number: 1, label: "Visualizer" },
-    { number: 2, label: "Devices" },
-    { number: 3, label: "Logs & Activity" },
-    { number: 4, label: "Issues" },
-    { number: 5, label: "Upgrade" }
+    { label: "Dashboard", path: "/" },
+    { label: "Visualizer", path: "/visualizer" },
+    { label: "Devices", path: "/devices" },
+    { label: "Logs & Activity", path: "/logs" },
+    { label: "Issues", path: "/issues" },
+    { label: "Features", path: "/features" },
   ];
 
   return (
-    <aside className="sidebar">
-      <h2 className="sidebar-logo">Network Tool</h2>
+    <div className="sidebar">
+      <h2 className="sidebar-title">Control Panel</h2>
       <ul className="sidebar-nav">
-        {navItems.map((item) => (
-          <li
-            key={item.number}
-            className={active === item.number ? "active" : ""}
-            onClick={() => setActive(item.number)}
-          >
-            {item.label}
+        {navItems.map((item, idx) => (
+          <li key={idx}>
+            <NavLink
+              to={item.path}
+              className={({ isActive }) =>
+                isActive ? "nav-link active" : "nav-link"
+              }
+              end
+            >
+              {item.label}
+            </NavLink>
           </li>
         ))}
       </ul>
-    </aside>
+    </div>
   );
-}
+};
 
 export default Sidebar;

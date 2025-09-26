@@ -1,7 +1,7 @@
-// src/components/Devices.jsx
+// src/components/Issues.jsx
 import React from "react";
 
-const Devices = () => {
+const Issues = () => {
   return (
     <div style={{
       display: "flex",
@@ -11,9 +11,9 @@ const Devices = () => {
       fontFamily: "Arial, sans-serif",
       color: "#0077b6"
     }}>
-      <h1>Devices</h1>
+      <h1>Issues</h1>
     </div>
   );
 };
 
-export default Devices;
+export default Issues;
