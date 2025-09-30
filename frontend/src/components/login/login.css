@@ -1,0 +1,81 @@
+/* keep existing reset if you have it */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: #0b274b;
+}
+
+/* card — use symmetric padding so left/right inside spacing is even */
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: #0b274b; /* deep blue background */
+}
+
+/* IMPORTANT: ensure box uses symmetric padding */
+.login-box {
+  background: #ffffff;
+  padding: 40px;       /* use same left/right padding */
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  width: 360px;
+  text-align: center;
+  box-sizing: border-box; /* include padding in width calculations */
+}
+
+/* make all children use border-box so widths behave predictably */
+.login-box *, .login-box *::before, .login-box *::after {
+  box-sizing: border-box;
+}
+
+/* labels & groups unchanged */
+.login-title {
+  color: #0b74de;
+  margin-bottom: 20px;
+}
+
+.form-group {
+  text-align: left;
+  margin-bottom: 15px;
+}
+
+/* inputs: full width but inside the card because of box-sizing */
+.form-group input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #cfd8e3;
+  border-radius: 6px;
+  outline: none;
+  transition: 0.2s;
+  font-size: 14px;
+  display: block;
+}
+
+/* focus styling */
+.form-group input:focus {
+  border-color: #0b74de;
+  box-shadow: 0 0 5px rgba(11, 116, 222, 0.4);
+}
+
+/* button matches input width exactly */
+.login-btn {
+  background: #0b74de;
+  color: white;
+  padding: 12px;
+  width: 100%;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 16px;
+  transition: 0.2s;
+  display: block;
+  margin-top: 8px;
+}
+
+.login-btn:hover {
+  background: #095bb0;
+}
