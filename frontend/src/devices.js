@@ -1,6 +1,7 @@
 const sampleData = {
   // 1️⃣ Visualizer
   visualizer: [
+    { id: 0, name: "Router-Gateway", ip: "192.168.1.1", status: "Working", vulnerable: false, icon: "🛜", type: "hub", draggable: true },
     { id: 1, name: "Workstation-01", ip: "192.168.1.10", status: "Working", vulnerable: true, icon: "💻", draggable: true },
     { id: 2, name: "Laptop-Dev-02", ip: "192.168.1.22", status: "Offline", vulnerable: false, icon: "💻", draggable: true },
     { id: 3, name: "Server-DB-01", ip: "192.168.1.5", status: "Working", vulnerable: true, icon: "🖥️", draggable: true },
@@ -11,6 +12,7 @@ const sampleData = {
 
   // 2️⃣ Devices
   devices: [
+    { id: 0, name: "Router-Gateway", type: "Router", ip: "192.168.1.1", status: "Working", department: "Network", remoteActions: ["Reboot"], icon: "🛜" },
     { id: 1, name: "Workstation-01", type: "PC", ip: "192.168.1.10", status: "Working", department: "Finance", remoteActions: ["Isolate", "Kill Process", "View Logs"], icon: "💻" },
     { id: 2, name: "Laptop-Dev-02", type: "Laptop", ip: "192.168.1.22", status: "Offline", department: "Development", remoteActions: ["Isolate"], icon: "💻" },
     { id: 3, name: "Server-DB-01", type: "Server", ip: "192.168.1.5", status: "Working", department: "IT", remoteActions: ["Kill Process", "Restart Service"], icon: "🖥️" },
