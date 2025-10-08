@@ -9,9 +9,11 @@ import Logs from "./components/Logs/logs.jsx";
 import Issues from "./components/issues/issues.jsx";
 import Features from "./components/Features/features.jsx";
 import Login from "./components/login/login.jsx";
+import DeviceDetail from "./components/devices/deviceControl.jsx/deviceControl.jsx";
+
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
 
   return (
     <BrowserRouter>
@@ -34,6 +36,8 @@ function App() {
                     <Route path="/" element={<Dashboard />} />
                     <Route path="/visualizer" element={<Visualizer />} />
                     <Route path="/devices" element={<Devices />} />
+                    <Route path="/devices/:id" element={<DeviceDetail />} />
+
                     <Route path="/logs" element={<Logs />} />
                     <Route path="/issues" element={<Issues />} />
                     <Route path="/features" element={<Features />} />

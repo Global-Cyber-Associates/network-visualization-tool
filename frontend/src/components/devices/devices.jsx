@@ -1,49 +1,53 @@
 // src/components/Devices.jsx
-import React from "react";
-import sampleData from "../../devices.js";
-import "./devices.css"; // external CSS file
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import './devices.css';
 
 const Devices = () => {
-  const devices = sampleData.devices; // only take devices array
+  const [devices, setDevices] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
-  // Group devices by type
-  const groupedDevices = devices.reduce((acc, device) => {
-    if (!acc[device.type]) acc[device.type] = [];
-    acc[device.type].push(device);
-    return acc;
-  }, {});
+  useEffect(() => {
+    const fetchDevices = async () => {
+      try {
+        const res = await axios.get("http://localhost:5000/api/system");
+        setDevices(Array.isArray(res.data) ? res.data : []);
+      } catch (err) {
+        console.error(err);
+        setError("Failed to load devices.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDevices();
+  }, []);
+
+  if (loading) return <div className="devices-container">Loading devices...</div>;
+  if (error) return <div className="devices-container">{error}</div>;
+  if (!devices.length) return <div className="devices-container">No devices found.</div>;
 
   return (
     <div className="devices-container">
-      <h1 className="devices-title">Devices</h1>
-
-      {Object.entries(groupedDevices).map(([type, devices]) => (
-        <div key={type} className="device-category-section">
-          <h2 className="device-category-title">{type}</h2>
-          <div className="device-list">
-            {devices.map((device) => (
-              <div key={device.id} className="device-card">
-                <div className="device-icon">{device.icon}</div>
-                <strong className="device-name">{device.name}</strong>
-                <span className="device-info">{device.ip}</span>
-                <span className="device-info">Status: {device.status}</span>
-                <span className="device-info">Dept: {device.department}</span>
-                <div className="device-actions">
-                  {device.remoteActions.map((action) => (
-                    <button
-                      key={action}
-                      className="action-btn"
-                      onClick={() => alert(`${action} on ${device.name}`)}
-                    >
-                      {action}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
+      <h1 className="devices-title">Connected Devices</h1>
+      <div className="device-list">
+        {devices.map(device => (
+          <div
+            key={device._id}
+            className="device-card"
+            onClick={() => navigate(`/devices/${device._id}`)}
+          >
+            <div className="device-icon">🖥️</div>
+            <div className="device-name">{device.hostname}</div>
+            <div className="device-info">
+              <p>{device.os_type} {device.os_version}</p>
+              <p>Machine ID: {device.machine_id}</p>
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 };
