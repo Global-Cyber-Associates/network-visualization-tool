@@ -1,67 +1,80 @@
-/* src/components/Devices.css */
+/* src/components/devices/devices.css */
 
+/* Parent container to scope everything */
 .devices-container {
-  font-family: Arial, sans-serif;
+  font-family: 'Arial', sans-serif;
   color: #0077b6;
   padding: 20px;
-  padding-top: 20px; /* optional top padding */
-  margin-left: 240px; /* offset for sidebar width + some gap */
   min-height: 100vh;
   background-color: #f0f8ff;
   box-sizing: border-box;
 }
 
-.devices-title {
+/* Title */
+.devices-container .devices-title {
   text-align: center;
   margin-bottom: 30px;
+  font-size: 2rem;
+  color: #005f87;
 }
 
-.device-category-section {
-  margin-bottom: 40px;
-}
-
-.device-category-title {
-  border-bottom: 2px solid #0077b6;
-  padding-bottom: 5px;
-}
-
-.device-list {
+/* Device list grid */
+.devices-container .device-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 15px;
-  margin-top: 15px;
+  gap: 20px;
+  justify-content: center;
 }
 
-.device-card {
+/* Individual device card */
+.devices-container .device-card {
   display: flex;
   flex-direction: column;
   align-items: center;
   background-color: #e0f7fa;
-  padding: 15px;
-  border-radius: 10px;
-  width: 180px;
-  box-shadow: 1px 2px 5px rgba(0, 0, 0, 0.2);
-  transition: transform 0.2s;
+  padding: 20px;
+  border-radius: 12px;
+  width: 200px;
+  box-shadow: 2px 3px 10px rgba(0,0,0,0.2);
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+  border: 1px solid #b0e0e6;
 }
 
-.device-card:hover {
+.devices-container .device-card:hover {
   transform: translateY(-5px);
+  box-shadow: 4px 6px 15px rgba(0,0,0,0.3);
 }
 
-.device-icon {
+/* Device icon */
+.devices-container .device-card .device-icon {
   font-size: 40px;
+  margin-bottom: 10px;
 }
 
-.device-name {
-  margin-top: 10px;
-}
-
-.device-info {
-  font-size: 12px;
+/* Device name */
+.devices-container .device-card .device-name {
+  font-weight: bold;
+  font-size: 1.1rem;
+  margin-bottom: 8px;
+  text-align: center;
   color: #0077b6;
 }
 
-.device-actions {
+/* Device info text */
+.devices-container .device-card .device-info {
+  font-size: 0.9rem;
+  text-align: center;
+  color: #005f87;
+}
+
+/* Optional: improve spacing for paragraphs */
+.devices-container .device-card .device-info p {
+  margin: 3px 0;
+}
+
+/* Device actions (if any) */
+.devices-container .device-card .device-actions {
   margin-top: 10px;
   display: flex;
   gap: 5px;
@@ -69,9 +82,10 @@
   justify-content: center;
 }
 
-.action-btn {
-  font-size: 10px;
-  padding: 5px 8px;
+/* Buttons inside device card */
+.devices-container .device-card .action-btn {
+  font-size: 0.8rem;
+  padding: 5px 10px;
   border: none;
   border-radius: 5px;
   cursor: pointer;
@@ -80,6 +94,6 @@
   transition: background-color 0.2s;
 }
 
-.action-btn:hover {
+.devices-container .device-card .action-btn:hover {
   background-color: #005f87;
 }

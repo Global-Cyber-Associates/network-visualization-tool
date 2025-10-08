@@ -1,13 +1,12 @@
 // Visualizer.jsx
 import React, { useEffect, useRef, useState } from "react";
-import "./visualizer.css";
 import sampleData from "../../devices";
+import './visualizer.css';
 
-// build links dynamically: all non-hub devices connect to the hub
 const makeDefaultLinks = (devices) => {
   const hub = devices.find((d) => d.type === "hub") || devices[0];
   return devices
-    .filter((d) => d.id !== hub.id)
+    .filter((d) => d.id !== hub.id && d.status !== "Offline")
     .map((dev) => ({ from: hub.id, to: dev.id }));
 };
 
@@ -18,7 +17,7 @@ export default function Visualizer() {
   const [positions, setPositions] = useState({});
   const [size, setSize] = useState({ width: 800, height: 400 });
 
-  // compute positions in a circle
+  // Compute positions in a circle
   useEffect(() => {
     function compute() {
       const el = containerRef.current;
@@ -53,14 +52,13 @@ export default function Visualizer() {
     return () => window.removeEventListener("resize", compute);
   }, [devices]);
 
-  function getNodeColor(status) {
-    if (status === "Working" || status === "online") return "#0b74de"; // blue
-    if (status === "Offline" || status === "offline") return "#d9534f"; // red
-    if (status === "Sleep") return "#6c757d"; // gray
-    return "#6c757d";
-  }
-
   const hub = devices.find((d) => d.type === "hub") || devices[0];
+
+  function getNodeClass(status) {
+    if (status === "Working" || status === "online") return "online";
+    if (status === "Sleep") return "sleep";
+    return "offline";
+  }
 
   return (
     <div className="visualizer-wrap" ref={containerRef}>
@@ -68,66 +66,79 @@ export default function Visualizer() {
         <h1>Network Visualizer</h1>
       </div>
 
-      <div className="visualizer-canvas" style={{ marginLeft: "240px" }}>
+      <div className="visualizer-canvas">
         <svg
           className="visualizer-svg"
           width={size.width}
           height={size.height}
           viewBox={`0 0 ${size.width} ${size.height}`}
         >
-          {/* links */}
+          <defs>
+            <linearGradient id="link-gradient" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#0b74de" />
+              <stop offset="100%" stopColor="#00bfff" />
+            </linearGradient>
+          </defs>
+
+          {/* Only render links for devices that are online or sleep */}
           {links.map((link, idx) => {
             const a = positions[link.from];
             const b = positions[link.to];
             if (!a || !b) return null;
+
+            const dx = b.x - a.x;
+            const dy = b.y - a.y;
+            const mx = a.x + dx / 2;
+            const my = a.y + dy / 2 - 30;
+            const targetDevice = devices.find((d) => d.id === link.to);
+
+            // Sleep devices: dotted gray lines, Online: gradient animated
+            const isSleep = targetDevice.status === "Sleep";
             return (
-              <line
+              <path
                 key={idx}
-                x1={a.x}
-                y1={a.y}
-                x2={b.x}
-                y2={b.y}
-                stroke="#cfd8e3"
-                strokeWidth={2}
-                opacity={0.9}
+                d={`M ${a.x},${a.y} Q ${mx},${my} ${b.x},${b.y}`}
+                stroke={isSleep ? "#6c757d" : "url(#link-gradient)"}
+                strokeWidth={isSleep ? 1.5 : 2}
+                fill="none"
+                strokeOpacity={isSleep ? 0.3 : 0.7}
+                className={isSleep ? "sleep-wire" : "wire-path"}
+                strokeDasharray={isSleep ? "2 4" : "6 4"}
               />
             );
           })}
 
-          {/* nodes */}
+          {/* Nodes */}
           {devices.map((d) => {
             const pos = positions[d.id];
             if (!pos) return null;
             const radius = d.type === "hub" ? 26 : 20;
+
             return (
               <g key={d.id} transform={`translate(${pos.x}, ${pos.y})`}>
                 <circle
                   r={radius}
-                  fill={getNodeColor(d.status)}
-                  stroke="#ffffff"
-                  strokeWidth={3}
+                  className={`node-circle ${getNodeClass(d.status)} ${
+                    d.type === "hub" ? "hub" : ""
+                  }`}
                 />
                 <text
                   x="0"
-                  y="10"
+                  y="6"
                   textAnchor="middle"
-                  fontSize="80"
+                  fontSize="18"
                   fill="#fff"
                   style={{ fontWeight: 700 }}
                 >
                   {d.icon || d.name.charAt(0).toUpperCase()}
                 </text>
-                <foreignObject x={-80} y={radius + 8} width={160} height={60}>
+
+                {/* Tooltip label */}
+                <foreignObject x={-100} y={radius + 8} width={200} height={80}>
                   <div className="node-label">
                     <div className="node-name">{d.name}</div>
                     <div className="node-ip">{d.ip}</div>
-                    <div
-                      className={`node-status ${
-                        d.status === "Working" || d.status === "online"
-                          ? "online"
-                          : "offline"
-                      }`}
-                    >
+                    <div className={`node-status ${getNodeClass(d.status)}`}>
                       {d.status}
                     </div>
                   </div>
@@ -138,9 +149,12 @@ export default function Visualizer() {
         </svg>
       </div>
 
-      <div className="visualizer-legend" style={{ marginLeft: "240px" }}>
+      <div className="visualizer-legend">
         <span className="legend-item">
           <span className="legend-dot online" /> Online
+        </span>
+        <span className="legend-item">
+          <span className="legend-dot sleep" /> Sleep
         </span>
         <span className="legend-item">
           <span className="legend-dot offline" /> Offline

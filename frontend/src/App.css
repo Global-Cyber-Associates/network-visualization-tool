@@ -1,0 +1,22 @@
+/* src/App.css or a dedicated layout css file */
+
+.app-container {
+  display: flex;
+  min-height: 100vh;
+}
+
+.page-content {
+  flex: 1; /* take remaining width */
+  margin-left: 240px; /* leave space for sidebar */
+  padding: 20px;
+  background-color: #f3f3f3; /* optional page background */
+  box-sizing: border-box;
+}
+
+/* Responsive: for smaller screens, sidebar becomes horizontal */
+@media (max-width: 768px) {
+  .page-content {
+    margin-left: 0;
+    padding: 10px;
+  }
+}
