@@ -38,3 +38,5 @@ build
 out
 coverage
 *.tsbuildinfo
+
+!**/config.json
