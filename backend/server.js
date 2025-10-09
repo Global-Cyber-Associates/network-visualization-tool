@@ -29,6 +29,18 @@ app.use("/api", protectedRoutes);
 app.use("/api", portsRoutes);
 app.use("/api", systemRoutes);
 
+// ✅ Function to connect to MongoDB dynamically
+const connectToDB = async (mongoURI) => {
+  try {
+    await mongoose.connect(mongoURI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    console.log("✅ MongoDB connected");
+  } catch (err) {
+    console.error("❌ MongoDB connection error:", err.message);
+  }
+};
 
 // ✅ Check config file on startup
 if (fs.existsSync(CONFIG_PATH)) {

@@ -16,14 +16,8 @@ const Setup = () => {
     try {
       const res = await fetch("http://localhost:5000/api/setup", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          mongoURI,
-          adminUsername,
-          adminPassword,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mongoURI, adminUsername, adminPassword }),
       });
 
       const data = await res.json();
@@ -45,12 +39,10 @@ const Setup = () => {
   return (
     <div className="setup-container">
       <div className="setup-box">
-        <h2 className="setup-title">Initial Setup</h2>
-        <p className="setup-subtitle">
-          Enter your MongoDB connection string and create the first admin
-          account.
-        </p>
-        <form onSubmit={handleSetup}>
+        <h2 className="setup-title">🚀 Initial Setup</h2>
+        <p className="setup-subtitle">Enter your MongoDB connection string.</p>
+
+        <form onSubmit={handleSetup} className="setup-form">
           <div className="form-group">
             <label>MongoDB URI</label>
             <input
@@ -61,6 +53,9 @@ const Setup = () => {
               required
             />
           </div>
+
+          {/* <div className="divider" /> */}
+          <p className="setup-subtitle">Create the first ADMIN account.</p>
 
           <div className="form-group">
             <label>Admin Username</label>
@@ -88,7 +83,16 @@ const Setup = () => {
             {loading ? "Setting up..." : "Save & Continue"}
           </button>
         </form>
-        {message && <p className="setup-message">{message}</p>}
+
+        {message && (
+          <p
+            className={`setup-message ${
+              message.startsWith("✅") ? "success" : "error"
+            }`}
+          >
+            {message}
+          </p>
+        )}
       </div>
     </div>
   );

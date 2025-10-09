@@ -1,75 +1,120 @@
+/* Background */
 .setup-container {
   display: flex;
   justify-content: center;
   align-items: center;
   height: 100vh;
-  background: #0b274b;
+  background: linear-gradient(135deg, #0b274b, #003366);
+  font-family: "Segoe UI", Tahoma, sans-serif;
 }
 
+/* Card */
 .setup-box {
-  background: #fff;
-  padding: 30px;
-  border-radius: 10px;
-  width: 400px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  background: #ffffff;
+  padding: 30px 35px;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  animation: fadeIn 0.4s ease;
 }
 
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Title & Subtitle */
 .setup-title {
   color: #0b74de;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   text-align: center;
+  font-size: 1.8rem;
 }
 
 .setup-subtitle {
   text-align: center;
-  font-size: 14px;
-  color: #555;
-  margin-bottom: 20px;
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 25px;
+  line-height: 1.4;
+}
+
+/* Form */
+.setup-form {
+  display: flex;
+  flex-direction: column;
 }
 
 .form-group {
-  margin-bottom: 15px;
+  margin-bottom: 18px;
 }
 
 .form-group label {
   display: block;
-  margin-bottom: 5px;
-  font-weight: bold;
+  margin-bottom: 6px;
+  font-weight: 600;
   color: #333;
+  font-size: 0.9rem;
 }
 
 .form-group input {
   width: 100%;
-  padding: 10px;
+  padding: 10px 12px;
   border: 1px solid #cfd8e3;
-  border-radius: 6px;
+  border-radius: 8px;
   outline: none;
+  transition: 0.2s;
+  font-size: 0.95rem;
 }
 
 .form-group input:focus {
   border-color: #0b74de;
-  box-shadow: 0 0 5px rgba(11, 116, 222, 0.4);
+  box-shadow: 0 0 6px rgba(11, 116, 222, 0.4);
 }
 
+/* Divider between DB & admin */
+.divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 20px 0;
+}
+
+/* Button */
 .setup-btn {
   background: #0b74de;
   color: #fff;
   padding: 12px;
   width: 100%;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
-  font-weight: bold;
-  font-size: 16px;
-  transition: 0.2s;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: background 0.25s ease;
 }
 
 .setup-btn:hover {
   background: #095bb0;
 }
 
+.setup-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Messages */
 .setup-message {
-  margin-top: 15px;
+  margin-top: 18px;
   text-align: center;
+  font-size: 0.95rem;
   font-weight: 500;
+}
+
+.setup-message.success {
+  color: #0ea75a;
+}
+
+.setup-message.error {
+  color: #d62828;
 }
