@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-network_scanner_safe.py
+network_scanner_cli.py
 
 Usage:
-  python network_scanner_safe.py            # interactive / auto detect
-  python network_scanner_safe.py --auto     # auto-select interface
-  python network_scanner_safe.py --network 192.168.1.0/24
-  python network_scanner_safe.py --update-vendors  # refresh mac-vendor DB first
+  python network_scanner_cli.py            # interactive / auto detect
+  python network_scanner_cli.py --auto     # auto-select interface
+  python network_scanner_cli.py --network 192.168.1.0/24
+  python network_scanner_cli.py --update-vendors  # refresh mac-vendor DB first
 """
 
 import argparse

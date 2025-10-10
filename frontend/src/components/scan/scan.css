@@ -1,0 +1,56 @@
+body{
+    background-color:#f4f6f8;
+}
+.scan-container {
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+  margin-left:240px;
+  font-family: Arial, sans-serif;
+}
+
+.scan-container h2 {
+  margin-bottom: 15px;
+}
+
+.scan-container button {
+  padding: 10px 20px;
+  background-color: #4f46e5;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-bottom: 20px;
+  transition: background 0.2s ease;
+}
+
+.scan-container button:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.scan-container button:hover:not(:disabled) {
+  background-color: #4338ca;
+}
+
+.error {
+  color: red;
+  margin-top: 10px;
+}
+
+.scan-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.scan-table th,
+.scan-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+.scan-table th {
+  background-color: #f3f4f6;
+}
