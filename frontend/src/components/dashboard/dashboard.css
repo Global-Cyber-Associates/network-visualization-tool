@@ -1,6 +1,10 @@
+.dashboard{
+  display: flex;
+}
+
 .dashboard-container {
   padding: 2rem;
-  margin-left: 240px; /* push away from sidebar */
+  width: 100vw;
 }
 
 .dashboard-title {

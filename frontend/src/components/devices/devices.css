@@ -1,99 +1,102 @@
-/* src/components/devices/devices.css */
-
-/* Parent container to scope everything */
-.devices-container {
-  font-family: 'Arial', sans-serif;
-  color: #0077b6;
-  padding: 20px;
-  min-height: 100vh;
-  background-color: #f0f8ff;
-  box-sizing: border-box;
-}
-
-/* Title */
-.devices-container .devices-title {
-  text-align: center;
-  margin-bottom: 30px;
-  font-size: 2rem;
-  color: #005f87;
-}
-
-/* Device list grid */
-.devices-container .device-list {
+/* ---------- Layout ---------- */
+.device-page {
   display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-  justify-content: center;
+  min-height: 100vh;
+  background: #0b1e2d;
+  color: #dfe7f1;
+  font-family: "Inter", sans-serif;
 }
 
-/* Individual device card */
-.devices-container .device-card {
+/* ---------- Container ---------- */
+.devices-container {
+  flex: 1;
+  padding: 2rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  background-color: #e0f7fa;
-  padding: 20px;
-  border-radius: 12px;
-  width: 200px;
-  box-shadow: 2px 3px 10px rgba(0,0,0,0.2);
-  transition: transform 0.2s, box-shadow 0.2s;
-  cursor: pointer;
-  border: 1px solid #b0e0e6;
+  background: #1b263b;
 }
 
-.devices-container .device-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 4px 6px 15px rgba(0,0,0,0.3);
+/* ---------- Header ---------- */
+.devices-title {
+  font-size: 2rem;
+  color: #ffffff;
+  margin-bottom: 1rem;
+  font-weight: 700;
 }
 
-/* Device icon */
-.devices-container .device-card .device-icon {
-  font-size: 40px;
-  margin-bottom: 10px;
+/* ---------- Grid ---------- */
+.device-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 1100px;
 }
 
-/* Device name */
-.devices-container .device-card .device-name {
-  font-weight: bold;
-  font-size: 1.1rem;
-  margin-bottom: 8px;
-  text-align: center;
-  color: #0077b6;
-}
-
-/* Device info text */
-.devices-container .device-card .device-info {
-  font-size: 0.9rem;
-  text-align: center;
-  color: #005f87;
-}
-
-/* Optional: improve spacing for paragraphs */
-.devices-container .device-card .device-info p {
-  margin: 3px 0;
-}
-
-/* Device actions (if any) */
-.devices-container .device-card .device-actions {
-  margin-top: 10px;
+/* ---------- Device Card ---------- */
+.device-card {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 1.5rem;
   display: flex;
-  gap: 5px;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-/* Buttons inside device card */
-.devices-container .device-card .action-btn {
-  font-size: 0.8rem;
-  padding: 5px 10px;
-  border: none;
-  border-radius: 5px;
+  flex-direction: column;
+  align-items: center;
   cursor: pointer;
-  background-color: #0077b6;
-  color: #fff;
-  transition: background-color 0.2s;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.devices-container .device-card .action-btn:hover {
-  background-color: #005f87;
+.device-card:hover {
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: 0 8px 18px rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.09);
+}
+
+/* ---------- Device Icon ---------- */
+.device-icon {
+  font-size: 2rem;
+  margin-bottom: 0.8rem;
+}
+
+/* ---------- Device Name ---------- */
+.device-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 0.4rem;
+  text-align: center;
+}
+
+/* ---------- Device Info ---------- */
+.device-info p {
+  font-size: 0.88rem;
+  color: #b5c9da;
+  margin: 0.2rem 0;
+  text-align: center;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 768px) {
+  .devices-container {
+    padding: 1rem;
+  }
+
+  .devices-title {
+    font-size: 1.6rem;
+  }
+
+  .device-card {
+    padding: 1.2rem;
+  }
+
+  .device-name {
+    font-size: 1rem;
+  }
+
+  .device-info p {
+    font-size: 0.8rem;
+  }
 }

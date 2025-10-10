@@ -1,64 +1,172 @@
-.logs-container {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  margin-left: 240px; /* adjust if sidebar exists */
-  padding: 20px;
+/* ---------- Layout ---------- */
+.logs-page {
+  display: flex;
   min-height: 100vh;
-  background-color: #f4f6f8;
-  box-sizing: border-box;
+  background: #0b1e2d;
+  color: #dfe7f1;
+  font-family: "Inter", sans-serif;
 }
 
+/* ---------- Container ---------- */
+.logs-container {
+  flex: 1;
+  padding: 2rem;
+  background: #1b263b;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-x: auto;
+  border-radius: 0 16px 16px 0;
+}
+
+/* ---------- Header ---------- */
 .logs-title {
+  font-size: 2rem;
+  color: #ffffff;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
   text-align: center;
-  margin-bottom: 30px;
-  color: #0077b6;
 }
 
+/* ---------- Table ---------- */
 .logs-table {
   width: 100%;
   border-collapse: collapse;
-  background-color: #fff;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  min-width: 800px;
 }
 
 .logs-table th,
 .logs-table td {
   padding: 0.75rem 1rem;
   text-align: left;
-  border-bottom: 1px solid #e5e7eb;
+}
+
+.logs-table thead {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(8px);
 }
 
 .logs-table th {
-  background-color: #f3f4f6;
+  color: #b5d0e0;
   font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.logs-table tbody tr {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
 }
 
 .logs-table tbody tr:hover {
-  background-color: #f9fafb;
+  background: rgba(255, 255, 255, 0.05);
 }
 
-.status-Success {
-  color: green;
-  font-weight: 600;
+.logs-table td {
+  color: #dfe7f1;
+  font-size: 0.9rem;
+  vertical-align: middle;
 }
 
-.status-Failure,
-.status-Error,
-.status-Alert {
-  color: red;
+/* ---------- Status Badges ---------- */
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.65rem;
+  border-radius: 12px;
   font-weight: 600;
+  font-size: 0.85rem;
+  text-align: center;
+  min-width: 70px;
 }
 
-.status-Warning {
-  color: orange;
-  font-weight: 600;
+.status-Successful {
+  background: #28c76f33;
+  color: #28c76f;
+}
+
+.status-Detected {
+  background: #ff6b6b33;
+  color: #ff6b6b;
+}
+
+.status-Pending {
+  background: #f7b92433;
+  color: #f7b924;
 }
 
 .status-Info {
-  color: blue;
-  font-weight: 600;
+  background: #00cfe833;
+  color: #00cfe8;
 }
 
-.icon {
-  font-size: 1.2rem;
-  margin-right: 0.3rem;
+.status-Warning {
+  background: #ff9f4333;
+  color: #ff9f43;
+}
+
+.status-Critical {
+  background: #ea545533;
+  color: #ea5455;
+}
+
+/* ---------- Status Text Colors Only ---------- */
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-align: center;
+  min-width: 70px;
+  background: transparent; /* No background */
+}
+
+/* Text colors only */
+.status-Successful {
+  color: #28c76f;
+}
+
+.status-Detected {
+  color: #ff6b6b;
+}
+
+.status-Pending {
+  color: #f7b924;
+}
+
+.status-Info {
+  color: #00cfe8;
+}
+
+.status-Warning {
+  color: #ff9f43;
+}
+
+.status-Critical {
+  color: #ea5455;
+}
+
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1024px) {
+  .logs-container {
+    padding: 1rem;
+  }
+
+  .logs-table th,
+  .logs-table td {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+  }
+
+  .logs-title {
+    font-size: 1.6rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .logs-table {
+    min-width: 100%;
+    display: block;
+    overflow-x: auto;
+  }
 }
