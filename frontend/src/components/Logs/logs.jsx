@@ -2,9 +2,13 @@
 import React from "react";
 import './logs.css'
 import systemLogs from "./logs.js";
+import Sidebar from "../navigation/sidenav.jsx";
 
 const Logs = () => {
   return (
+
+    <div className="logs-page">
+      <Sidebar />
     <div className="logs-container">
       <h1 className="logs-title">System Logs</h1>
       
@@ -35,6 +39,7 @@ const Logs = () => {
         </tbody>
       </table>
     </div>
+              </div>
   );
 };
 

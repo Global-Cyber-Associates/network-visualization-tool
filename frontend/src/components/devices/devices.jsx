@@ -3,6 +3,8 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import './devices.css';
+import Sidebar from "../navigation/sidenav.jsx";
+
 
 const Devices = () => {
   const [devices, setDevices] = useState([]);
@@ -30,7 +32,10 @@ const Devices = () => {
   if (!devices.length) return <div className="devices-container">No devices found.</div>;
 
   return (
-    <div className="devices-container">
+    <div className="device-page">
+          <Sidebar />
+
+    <div className="devices-container">                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
       <h1 className="devices-title">Connected Devices</h1>
       <div className="device-list">
         {devices.map(device => (
@@ -48,6 +53,7 @@ const Devices = () => {
           </div>
         ))}
       </div>
+    </div>
     </div>
   );
 };

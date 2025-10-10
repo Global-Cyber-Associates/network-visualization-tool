@@ -62,7 +62,6 @@ function App() {
               element={
                 isAuthenticated ? (
                   <div className="app-container">
-                    <Sidebar />
                     <div className="page-content">
                       <Routes>
                         <Route path="/" element={<Dashboard />} />
