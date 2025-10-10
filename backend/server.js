@@ -9,6 +9,8 @@ import authRoutes from "./api/auth.js";
 import protectedRoutes from "./api/protected.js";
 import portsRoutes from "./api/ports.js";
 import systemRoutes from "./api/system.js";
+import networkScanRoutes from "./api/networkScan.js";  // 👈 NEW
+
 import bcrypt from "bcrypt";
 import fs from "fs";
 import mongoose from "mongoose";
@@ -28,6 +30,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api", protectedRoutes);
 app.use("/api", portsRoutes);
 app.use("/api", systemRoutes);
+app.use("/api/network-scan", networkScanRoutes);
 
 // ✅ Function to connect to MongoDB dynamically
 const connectToDB = async (mongoURI) => {

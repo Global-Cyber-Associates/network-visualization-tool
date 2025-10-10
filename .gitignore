@@ -40,7 +40,7 @@ coverage
 *.tsbuildinfo
 
 !**/config.json
-
+g
 # Ignore all .pyc files
 *.pyc
 
