@@ -1,38 +1,61 @@
-body{
-    background-color:#f4f6f8;
-}
-.scan-container {
-  padding: 20px;
-  max-width: 800px;
-  margin: 0 auto;
-  margin-left:240px;
+body {
+  background-color: #0f172a; /* same tone as other pages */
+  margin: 0;
   font-family: Arial, sans-serif;
+  color: white;
 }
 
-.scan-container h2 {
-  margin-bottom: 15px;
+/* overall page layout */
+.scan-page {
+  display: flex;
+  min-height: 100vh;
+  background-color: #0f172a;
 }
 
-.scan-container button {
+/* main scan content */
+.scan-content {
+  flex: 1;
+  padding: 40px 60px;
+  background-color: #f4f6f8;
+  color: #111827;
+  border-radius: 16px;
+  margin: 40px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.15);
+  max-width: 1000px;
+  height: fit-content;              /* ✅ Prevent full-height white area */
+  transition: all 0.3s ease;
+}
+/* heading + button */
+.scan-content h2 {
+  margin-bottom: 10px;
+}
+
+.description {
+  margin-bottom: 20px;
+  color: #555;
+}
+
+.scan-content button {
   padding: 10px 20px;
   background-color: #4f46e5;
   color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: 6px;
   cursor: pointer;
   margin-bottom: 20px;
   transition: background 0.2s ease;
 }
 
-.scan-container button:disabled {
+.scan-content button:hover:not(:disabled) {
+  background-color: #4338ca;
+}
+
+.scan-content button:disabled {
   background-color: #9ca3af;
   cursor: not-allowed;
 }
 
-.scan-container button:hover:not(:disabled) {
-  background-color: #4338ca;
-}
-
+/* error + table */
 .error {
   color: red;
   margin-top: 10px;
@@ -47,10 +70,37 @@ body{
 .scan-table th,
 .scan-table td {
   border: 1px solid #ddd;
-  padding: 8px;
+  padding: 10px;
   text-align: left;
 }
 
 .scan-table th {
   background-color: #f3f4f6;
+  color: #111827;
 }
+
+.scan-table td {
+  background-color: #ffffff;
+}
+
+.scan-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 20px; /* adds clean spacing between button and table */
+  position: relative;
+  z-index: 1;
+}
+
+.scan-output-table {
+  width: 100%;
+  margin-top: 20px;
+  position: relative;
+  z-index: 0;
+}
+
+button {
+  position: relative;
+  z-index: 2;
+}
+
