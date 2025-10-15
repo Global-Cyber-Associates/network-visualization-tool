@@ -5,40 +5,51 @@ import Sidebar from "../navigation/sidenav.jsx";
 
 const Dashboard = () => {
   const activeDevices = sampleData.devices.filter((d) => d.status === "Working").length;
-  const issuesDetected = sampleData.issues.length;
+  const inactiveDevices = sampleData.devices.filter((d) => d.status !== "Working").length;
+  const criticalIssues = sampleData.issues.filter((i) => i.severity === "High").length;
   const logsToday = sampleData.logs.length;
-  const featuresBought = sampleData.upgrade.length;
+
+  // Show only critical/recent logs for management overview
+  const recentCriticalLogs = sampleData.logs
+    .filter((l) => l.status === "Detected" || l.status === "Failed")
+    .slice(0, 5);
+
+  // Current issues sorted by severity
+  const currentIssues = sampleData.issues.sort((a, b) => {
+    const severityRank = { High: 3, Medium: 2, Low: 1 };
+    return (severityRank[b.severity] || 0) - (severityRank[a.severity] || 0);
+  });
 
   return (
     <div className="dashboard">
       <Sidebar />
 
       <div className="dashboard-container">
-        <h1 className="dashboard-title">Dashboard</h1>
+        <h1 className="dashboard-title">Network & Device Overview</h1>
 
-        {/* Top stats */}
+        {/* Top KPIs */}
         <div className="stats-grid">
-          <div className="stat-card">
+          <div className="stat-card green">
             <h2>Active Devices</h2>
             <p>{activeDevices}</p>
           </div>
-          <div className="stat-card">
-            <h2>Issues Detected</h2>
-            <p>{issuesDetected}</p>
+          <div className="stat-card red">
+            <h2>Inactive Devices</h2>
+            <p>{inactiveDevices}</p>
           </div>
-          <div className="stat-card">
+          <div className="stat-card orange">
+            <h2>Critical Issues</h2>
+            <p>{criticalIssues}</p>
+          </div>
+          <div className="stat-card blue">
             <h2>Logs Today</h2>
             <p>{logsToday}</p>
           </div>
-          <div className="stat-card">
-            <h2>Features Bought</h2>
-            <p>{featuresBought}</p>
-          </div>
         </div>
 
-        {/* Logs */}
+        {/* Recent Critical Logs */}
         <div className="table-container">
-          <h2>Recent Activity</h2>
+          <h2>Recent Critical Logs</h2>
           <table className="activity-table">
             <thead>
               <tr>
@@ -49,20 +60,12 @@ const Dashboard = () => {
               </tr>
             </thead>
             <tbody>
-              {sampleData.logs.map((log) => (
+              {recentCriticalLogs.map((log) => (
                 <tr key={log.id}>
                   <td>{log.time}</td>
                   <td>{log.icon} {log.type}</td>
                   <td>{log.device}</td>
-                  <td
-                    className={
-                      log.status === "Successful"
-                        ? "status-green"
-                        : log.status === "Detected"
-                        ? "status-red"
-                        : "status-blue"
-                    }
-                  >
+                  <td className={`status-${log.status === "Detected" ? "red" : "blue"}`}>
                     {log.status}
                   </td>
                 </tr>
@@ -71,9 +74,9 @@ const Dashboard = () => {
           </table>
         </div>
 
-        {/* Issues */}
+        {/* Current Issues */}
         <div className="table-container">
-          <h2>Current Issues</h2>
+          <h2>Current Device Issues</h2>
           <table className="activity-table">
             <thead>
               <tr>
@@ -83,17 +86,11 @@ const Dashboard = () => {
               </tr>
             </thead>
             <tbody>
-              {sampleData.issues.map((issue) => (
+              {currentIssues.map((issue) => (
                 <tr key={issue.id}>
                   <td>{issue.device}</td>
                   <td>{issue.icon} {issue.title}</td>
-                  <td
-                    className={
-                      issue.severity === "High"
-                        ? "status-red"
-                        : "status-blue"
-                    }
-                  >
+                  <td className={`status-${issue.severity === "High" ? "red" : "blue"}`}>
                     {issue.severity}
                   </td>
                 </tr>
@@ -102,28 +99,6 @@ const Dashboard = () => {
           </table>
         </div>
 
-        {/* Features */}
-        <div className="table-container">
-          <h2>Premium Features</h2>
-          <table className="activity-table">
-            <thead>
-              <tr>
-                <th>Feature</th>
-                <th>Device</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sampleData.upgrade.map((feat) => (
-                <tr key={feat.id}>
-                  <td>{feat.icon} {feat.type}</td>
-                  <td>{feat.device}</td>
-                  <td className="status-blue">{feat.status}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
       </div>
     </div>
   );
