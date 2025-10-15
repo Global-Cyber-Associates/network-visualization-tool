@@ -14,6 +14,8 @@ import portsRoutes from "./api/ports.js";
 import systemRoutes from "./api/system.js"; 
 import scanRunRouter from "./api/scanRun.js";
 
+import tasksRoutes from "./api/tasks.js";
+
 import User from "./models/User.js";
 
 const app = express();
@@ -31,7 +33,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api", protectedRoutes);
 app.use("/api", portsRoutes);
 app.use("/api", systemRoutes);
-app.use("/api/scan", scanRunRouter)
+app.use("/api/scan", scanRunRouter);
+app.use("/api", tasksRoutes);
 
 /* ----------------------- SETUP / CONFIG ----------------------- */
 
