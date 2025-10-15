@@ -2,41 +2,28 @@ import React, { useEffect, useRef, useState } from "react";
 import Sidebar from "../navigation/sidenav.jsx";
 import "./visualizer.css";
 
-const networkData = {
-  network: "192.168.1.1/24",
-  devices: [
-    { ips: ["192.168.1.1"], mac: "f4:27:56:2c:fc:3f", vendor: "Unknown" },
-    { ips: ["192.168.1.2"], mac: "c8:7f:54:ce:67:44", vendor: "Unknown" },
-    { ips: ["192.168.1.3"], mac: "10:ff:e0:48:a7:13", vendor: "Unknown" },
-    { ips: ["192.168.1.11"], mac: "14:13:33:e2:09:89", vendor: "AzureWave Technology Inc." },
-    { ips: ["192.168.1.7"], mac: "cc:6b:1e:41:e5:7d", vendor: "CLOUD NETWORK TECHNOLOGY SINGAPORE PTE. LTD." },
-    { ips: ["192.168.1.12"], mac: "04:ec:d8:56:35:6a", vendor: "Intel Corporate" },
-    { ips: ["192.168.1.15"], mac: "1c:ce:51:14:92:79", vendor: "Unknown" },
-    { ips: ["192.168.1.9"], mac: "c8:94:02:47:0b:dd", vendor: "CHONGQING FUGUI ELECTRONICS CO.,LTD." },
-  ],
-};
-
-// 🧠 Map raw network data to structured device list
+// Map backend data to frontend nodes
 const mapNetworkData = (data) => {
   if (!data || !data.devices) return [];
+
   return data.devices.map((dev, i) => {
-    const ip = dev.ips?.[0] || "N/A";
-    const isRouter = ip.endsWith(".1");
-    const vendorName = dev.vendor === "Unknown" ? dev.mac : dev.vendor.split(" ")[0];
+    const ip = dev.ip || "N/A";
+    const vendorName = dev.vendor || dev.mac || "Unknown";
+
     return {
       id: i,
-      name: isRouter ? "Router-Gateway" : vendorName,
+      name: i === 0 ? "Router-Gateway" : vendorName, // first device as router
       ip,
       status: "Working",
       vulnerable: false,
-      icon: isRouter ? "🛜" : "💻",
-      type: isRouter ? "hub" : "device",
+      icon: i === 0 ? "🛜" : "💻",
+      type: i === 0 ? "hub" : "device",
       power: true,
     };
   });
 };
 
-// ⚙️ Generate link list between router and devices
+// Generate links from hub to other devices
 const makeLinks = (devices) => {
   const hub = devices.find((d) => d.type === "hub");
   if (!hub) return [];
@@ -45,29 +32,30 @@ const makeLinks = (devices) => {
 
 export default function Visualizer() {
   const containerRef = useRef(null);
-  const [devices, setDevices] = useState(mapNetworkData(networkData));
+  const [devices, setDevices] = useState([]);
   const [links, setLinks] = useState([]);
   const [positions, setPositions] = useState({});
   const [size, setSize] = useState({ width: 800, height: 400 });
-  const [showDesc, setShowDesc] = useState(true);
   const [draggedNode, setDraggedNode] = useState(null);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
 
-  // 🧷 Load saved positions from localStorage (if any)
+  // Fetch devices from backend
   useEffect(() => {
-    const saved = localStorage.getItem("devicePositions");
-    if (saved) {
+    const fetchData = async () => {
       try {
-        setPositions(JSON.parse(saved));
-      } catch (e) {
-        console.error("Failed to parse saved positions:", e);
+        const res = await fetch("http://localhost:5000/api/visualizer-data");
+        const json = await res.json();
+        setDevices(mapNetworkData(json));
+      } catch (err) {
+        console.error("Failed to fetch network data:", err);
       }
-    }
+    };
+    fetchData();
   }, []);
 
-  // 🌀 Compute circular layout if no saved positions
+  // Compute circular layout
   useEffect(() => {
-    if (Object.keys(positions).length > 0) return;
+    if (!devices.length) return;
 
     const computePositions = () => {
       const el = containerRef.current;
@@ -99,21 +87,14 @@ export default function Visualizer() {
     computePositions();
     window.addEventListener("resize", computePositions);
     return () => window.removeEventListener("resize", computePositions);
-  }, [devices, positions]);
+  }, [devices]);
 
-  // 🔗 Generate links
+  // Generate links
   useEffect(() => {
     if (devices.length > 0) setLinks(makeLinks(devices));
   }, [devices]);
 
-  // 💾 Save positions on change
-  useEffect(() => {
-    if (Object.keys(positions).length > 0) {
-      localStorage.setItem("devicePositions", JSON.stringify(positions));
-    }
-  }, [positions]);
-
-  // 🖱️ Dragging Handlers
+  // Drag handlers
   const handleMouseDown = (id, e) => {
     e.stopPropagation();
     const svg = e.target.ownerSVGElement;
@@ -150,13 +131,9 @@ export default function Visualizer() {
       <div className="visualizer-wrap" ref={containerRef}>
         <div className="visualizer-header">
           <h1>Network Visualizer</h1>
-          <button className="desc-toggle-btn" onClick={() => setShowDesc((p) => !p)}>
-            {showDesc ? "Hide Descriptions" : "Show Descriptions"}
-          </button>
           <button
             className="reset-btn"
             onClick={() => {
-              localStorage.removeItem("devicePositions");
               window.location.reload();
             }}
           >
@@ -184,7 +161,7 @@ export default function Visualizer() {
               </radialGradient>
             </defs>
 
-            {/* 🔗 Links */}
+            {/* Links */}
             {links.map((link, idx) => {
               const a = positions[link.from];
               const b = positions[link.to];
@@ -203,12 +180,11 @@ export default function Visualizer() {
               );
             })}
 
-            {/* 💻 Nodes */}
+            {/* Nodes */}
             {devices.map((d) => {
               const pos = positions[d.id];
               if (!pos) return null;
               const radius = d.type === "hub" ? 28 : 20;
-
               return (
                 <g
                   key={d.id}
@@ -221,27 +197,16 @@ export default function Visualizer() {
                     className={`node-circle ${d.type === "hub" ? "hub" : "online"}`}
                     fill={d.type === "hub" ? "url(#hub-gradient)" : "#00bfff"}
                   />
-                  <text
-                    x="0"
-                    y="6"
-                    textAnchor="middle"
-                    fontSize="18"
-                    fill="#fff"
-                    fontWeight={700}
-                    pointerEvents="none"
-                  >
+                  <text x="0" y="6" textAnchor="middle" fontSize="18" fill="#fff" fontWeight={700} pointerEvents="none">
                     {d.icon}
                   </text>
-
-                  {showDesc && (
-                    <foreignObject x={-100} y={radius + 8} width={200} height={80} pointerEvents="none">
-                      <div className="node-label">
-                        <div className="node-name">{d.name}</div>
-                        <div className="node-ip">{d.ip}</div>
-                        <div className="node-status online">{d.status}</div>
-                      </div>
-                    </foreignObject>
-                  )}
+                  <foreignObject x={-100} y={radius + 8} width={200} height={80} pointerEvents="none">
+                    <div className="node-label">
+                      <div className="node-name">{d.name}</div>
+                      <div className="node-ip">{d.ip}</div>
+                      <div className="node-status online">{d.status}</div>
+                    </div>
+                  </foreignObject>
                 </g>
               );
             })}
