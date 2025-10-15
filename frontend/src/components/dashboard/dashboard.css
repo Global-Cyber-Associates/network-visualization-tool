@@ -5,6 +5,8 @@
 .dashboard-container {
   padding: 2rem;
   width: 100vw;
+  background-color:#0f172a;
+  color: #000000;
 }
 
 .dashboard-title {

@@ -13,7 +13,7 @@ const Sidebar = () => {
     { label: "Logs & Activity", path: "/logs" },
     { label: "Issues", path: "/issues" },
     { label: "Features", path: "/features" },
-    { label: "scan", path: "/scan" },
+    { label: "Scan", path: "/scan" },
   ];
 
   return (
