@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom";
 import './devices.css';
 import Sidebar from "../navigation/sidenav.jsx";
 
-
 const Devices = () => {
   const [devices, setDevices] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -33,27 +32,66 @@ const Devices = () => {
 
   return (
     <div className="device-page">
-          <Sidebar />
+      <Sidebar />
+      <div className="devices-container">
+        <h1 className="devices-title">Connected Devices</h1>
 
-    <div className="devices-container">                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
-      <h1 className="devices-title">Connected Devices</h1>
-      <div className="device-list">
-        {devices.map(device => (
-          <div
-            key={device._id}
-            className="device-card"
-            onClick={() => navigate(`/devices/${device._id}`)}
-          >
-            <div className="device-icon">🖥️</div>
-            <div className="device-name">{device.hostname}</div>
-            <div className="device-info">
-              <p>{device.os_type} {device.os_version}</p>
-              <p>Machine ID: {device.machine_id}</p>
+        <div className="device-list">
+          {devices.map(device => (
+            <div
+              key={device._id}
+              className="device-card"
+              onClick={() => navigate(`/devices/${device._id}`)}
+              style={{ cursor: "pointer" }}
+            >
+              {/* Left: Icon and basic info */}
+              <div className="device-left">
+                <div className="device-icon">🖥️</div>
+                <div className="device-info-wrapper">
+                  <div className="device-name">{device.hostname}</div>
+                  <div className="device-info">
+                    <p>{device.os_type} {device.os_version}</p>
+                    <p>Machine ID: {device.machine_id}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right: Action buttons */}
+              <div className="device-actions">
+                <button
+                  className="action-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    alert(`Disconnect ${device.hostname}`);
+                  }}
+                >
+                  Disconnect
+                </button>
+
+                <button
+                  className="action-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/tasks/${device._id}`);
+                  }}
+                >
+                  Task Manager
+                </button>
+
+                <button
+                  className="action-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    alert(`Scan ${device.hostname}`);
+                  }}
+                >
+                  Scan
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
     </div>
   );
 };

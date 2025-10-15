@@ -12,6 +12,7 @@ import Features from "./components/Features/features.jsx";
 import Login from "./components/login/login.jsx";
 import Setup from "./components/setup/Setup.jsx"; // ✅ new setup page
 import Scan from "./components/scan/scan.jsx";
+import TaskManager from "./components/devices/Taskmanager/taskmanager.jsx";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -68,6 +69,7 @@ function App() {
                         <Route path="/visualizer" element={<Visualizer />} />
                         <Route path="/devices" element={<Devices />} />
                         <Route path="/devices/:id" element={<DeviceDetail />} />
+                        <Route path="/tasks/:id" element={<TaskManager />} />
                         <Route path="/logs" element={<Logs />} />
                         <Route path="/issues" element={<Issues />} />
                         <Route path="/features" element={<Features />} />

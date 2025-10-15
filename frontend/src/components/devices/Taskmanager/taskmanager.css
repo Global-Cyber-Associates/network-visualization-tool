@@ -1,0 +1,133 @@
+/* ======= TASK MANAGER UI ======= */
+.pc-container {
+  background: #1e1e1e;
+  color: #e0e0e0;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  min-height: 100vh;
+  padding: 20px 40px;
+  box-sizing: border-box;
+}
+
+/* HEADER */
+.task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #2e2e2e;
+  padding-bottom: 10px;
+  margin-bottom: 15px;
+}
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.task-title {
+  font-size: 22px;
+  color: #f3f3f3;
+  font-weight: 600;
+}
+.task-sub {
+  font-size: 13px;
+  color: #8f8f8f;
+}
+.header-right p {
+  margin: 2px 0;
+  font-size: 13px;
+  color: #ccc;
+}
+.back-btn {
+  background: #2d2d2d;
+  color: #ccc;
+  border: 1px solid #3c3c3c;
+  padding: 5px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+.back-btn:hover {
+  background: #404040;
+  color: #fff;
+}
+
+/* SECTION BOX */
+.pc-section {
+  margin-top: 20px;
+  background: #252526;
+  border: 1px solid #333;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
+}
+.section-header {
+  background: #2d2d2d;
+  padding: 8px 15px;
+  border-bottom: 1px solid #3c3c3c;
+}
+.section-header h2 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0;
+  color: #fff;
+}
+
+/* TABLE */
+.table {
+  max-height: 400px;
+  overflow-y: auto;
+  position: relative;
+}
+.table-header,
+.task-row {
+  display: grid;
+  grid-template-columns: 3fr 1fr 1fr 1fr;
+  padding: 8px 15px;
+  font-size: 13px;
+  align-items: center;
+}
+.table-header {
+  background: #2b2b2b;
+  color: #bfbfbf;
+  font-weight: 500;
+  border-bottom: 1px solid #333;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+.task-row {
+  border-bottom: 1px solid #2f2f2f;
+  transition: background 0.15s ease;
+}
+.task-row:hover {
+  background: #333333;
+}
+.task-name {
+  color: #62afff;
+  font-weight: 500;
+}
+
+/* EMPTY */
+.empty {
+  text-align: center;
+  padding: 15px;
+  color: #888;
+  font-style: italic;
+}
+
+/* SCROLLBAR */
+.table::-webkit-scrollbar {
+  width: 8px;
+}
+.table::-webkit-scrollbar-thumb {
+  background: #3c3c3c;
+  border-radius: 4px;
+}
+.table::-webkit-scrollbar-thumb:hover {
+  background: #5a5a5a;
+}
+
+/* TRANSITIONS */
+.pc-container, .pc-section, .task-row {
+  transition: all 0.2s ease-in-out;
+}
