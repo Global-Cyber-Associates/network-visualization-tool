@@ -10,23 +10,41 @@ const Scan = () => {
   const runScan = async () => {
     setLoading(true);
     setError("");
-    try {
-      const res = await fetch("http://localhost:5000/api/scan/run", {
-        method: "POST",
-      });
-      const data = await res.json();
+    setDevices([]);
 
-      if (!data.ok) {
-        setError(data.error || "Scan failed");
+    try {
+      console.log("Starting network scan...");
+      const res = await fetch("http://localhost:5000/api/scan", {
+        method: "post",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      console.log("Response status:", res.status);
+
+      if (!res.ok) {
+        throw new Error(`Server returned ${res.status}`);
+      }
+
+      const data = await res.json();
+      console.log("Scan response data:", data);
+
+      // Adjust according to your backend JSON format
+      const devicesList = data.results?.devices || data.devices || [];
+
+      if (devicesList.length === 0) {
+        setError("No devices found.");
         setDevices([]);
       } else {
-        setDevices(data.results?.devices || []);
+        setDevices(devicesList);
       }
     } catch (err) {
-      console.error(err);
+      console.error("Scan error:", err);
       setError("Failed to fetch scan results");
       setDevices([]);
     }
+
     setLoading(false);
   };
 
@@ -36,7 +54,8 @@ const Scan = () => {
       <div className="scan-content">
         <h2>Network Scan</h2>
         <p className="description">
-          Scan your network to detect connected devices and identify potential vulnerabilities.
+          Scan your network to detect connected devices and identify potential
+          vulnerabilities.
         </p>
 
         <button onClick={runScan} disabled={loading}>
@@ -77,22 +96,24 @@ const Scan = () => {
                   {devices.map((d, index) => (
                     <tr key={index}>
                       <td>
-                        {d.ips?.length ? (
-                          d.ips.map((ip, i) => (
-                            <span key={i} className="ip-badge">
-                              {ip}
-                            </span>
-                          ))
-                        ) : (
-                          "-"
-                        )}
+                        {d.ips?.length
+                          ? d.ips.map((ip, i) => (
+                              <span key={i} className="ip-badge">
+                                {ip}
+                              </span>
+                            ))
+                          : "-"}
                       </td>
                       <td>{d.mac || "-"}</td>
-                      <td className={d.vendor ? "vendor-known" : "vendor-unknown"}>
+                      <td
+                        className={d.vendor ? "vendor-known" : "vendor-unknown"}
+                      >
                         {d.vendor || "Unknown"}
                       </td>
                       <td>
-                        <span className={`mobile-tag ${d.mobile ? "yes" : "no"}`}>
+                        <span
+                          className={`mobile-tag ${d.mobile ? "yes" : "no"}`}
+                        >
                           {d.mobile ? "Yes" : "No"}
                         </span>
                       </td>

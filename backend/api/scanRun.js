@@ -1,26 +1,59 @@
+// backend/api/scanRun.js
 import express from "express";
 import { spawn } from "child_process";
+import path from "path";
+import ScanResult from "../models/ScanResult.js";
+
 const router = express.Router();
 
-router.post("/run", (req, res) => {
-  const py = spawn("python", ["../agent/scan_to_json.py", "--auto", "--json"], { cwd: process.cwd() });
+// POST /api/scan
+router.post("/", async (req, res) => {
+  console.log("[*] Starting network scan...");
+
+  // Resolve Python scanner path relative to backend root
+  const py = spawn("python", ["../agent/scan_to_json.py", "--auto", "--json"], {
+  cwd: process.cwd(), // backend folder
+  });
 
   let stdout = "";
   let stderr = "";
 
-  py.stdout.on("data", (data) => (stdout += data.toString()));
-  py.stderr.on("data", (data) => (stderr += data.toString()));
+  py.stdout.on("data", (data) => {
+    stdout += data.toString();
+  });
 
-  py.on("close", (code) => {
+  py.stderr.on("data", (data) => {
+    stderr += data.toString();
+    console.error("Scanner stderr:", data.toString());
+  });
+
+  py.on("close", async (code) => {
     if (code !== 0) {
-      return res.status(500).json({ ok: false, error: stderr || "Python scan failed" });
+      return res.status(500).json({ ok: false, error: stderr || "Scan failed" });
     }
+
     try {
       const parsed = JSON.parse(stdout);
-      res.json(parsed);
+
+      // Save to MongoDB
+      const scanDoc = new ScanResult({
+        network: parsed.results.network,
+        devices: parsed.results.devices,
+        timestamp: new Date(),
+      });
+
+      await scanDoc.save();
+
+      return res.json({ ok: true, results: parsed.results });
     } catch (err) {
-      res.status(500).json({ ok: false, error: "Failed to parse scanner output", raw: stdout, stderr });
+      console.error("Parse error:", err);
+      return res.status(500).json({ ok: false, error: "Failed to parse scanner output", raw: stdout });
     }
+  });
+
+  py.on("error", (err) => {
+    console.error("Failed to start scanner process:", err);
+    return res.status(500).json({ ok: false, error: err.message });
   });
 });
 

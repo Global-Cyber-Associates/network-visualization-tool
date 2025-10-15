@@ -11,7 +11,7 @@ import mongoose from "mongoose";
 import authRoutes from "./api/auth.js";
 import protectedRoutes from "./api/protected.js";
 import portsRoutes from "./api/ports.js";
-import systemRoutes from "./api/system.js"; 
+import systemRoutes from "./api/system.js";
 import scanRunRouter from "./api/scanRun.js";
 
 import User from "./models/User.js";
@@ -20,45 +20,51 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-const JWT_SECRET = "supersecretkey"; // Move to .env later
+const JWT_SECRET = "supersecretkey"; // move to .env later
 const CONFIG_PATH = "./config.json";
 
-// Connect to MongoDB
+/* ----------------------- DATABASE CONNECTION ----------------------- */
+
+// Connect to MongoDB using the default URI (from db.js)
 connectDB();
 
-// Use routes
-app.use("/api/auth", authRoutes);
-app.use("/api", protectedRoutes);
-app.use("/api", portsRoutes);
-app.use("/api", systemRoutes);
-app.use("/api/scan", scanRunRouter)
-
-/* ----------------------- SETUP / CONFIG ----------------------- */
-
-// Connect dynamically to MongoDB
+// Dynamically connect to different MongoDB if needed
 const connectToDB = async (mongoURI) => {
   try {
     await mongoose.connect(mongoURI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
-    console.log("✅ MongoDB connected");
+    console.log("✅ MongoDB connected dynamically");
   } catch (err) {
     console.error("❌ MongoDB connection error:", err.message);
   }
 };
 
-// Check config file on startup
+// Load Mongo URI from config.json on startup
 if (fs.existsSync(CONFIG_PATH)) {
   try {
     const config = JSON.parse(fs.readFileSync(CONFIG_PATH, "utf-8"));
-    if (config.mongoURI) connectToDB(config.mongoURI);
+    if (config.mongoURI) await connectToDB(config.mongoURI);
   } catch (err) {
     console.error("Error reading config file:", err.message);
   }
 }
 
-// Check if app is configured
+/* ----------------------- ROUTES ----------------------- */
+
+// Auth & app routes
+app.use("/api/auth", authRoutes);
+app.use("/api", protectedRoutes);
+app.use("/api", portsRoutes);
+app.use("/api", systemRoutes);
+
+// 🟢 Network Scan API (Python + MongoDB)
+app.use("/api/scan", scanRunRouter);
+
+/* ----------------------- CONFIGURATION ENDPOINTS ----------------------- */
+
+// Check if app is configured (for setup page)
 app.get("/api/check-config", (req, res) => {
   try {
     if (fs.existsSync(CONFIG_PATH)) {
@@ -98,7 +104,7 @@ app.post("/api/setup", async (req, res) => {
   }
 });
 
-// Login route
+/* ----------------------- LOGIN ----------------------- */
 app.post("/login", async (req, res) => {
   const { username, password } = req.body;
 
@@ -109,10 +115,9 @@ app.post("/login", async (req, res) => {
   if (!isValid) return res.status(401).json({ message: "Invalid credentials" });
 
   const token = jwt.sign({ username: user.username }, JWT_SECRET, { expiresIn: "1h" });
-
   res.json({ token });
 });
 
-/* ----------------------- SERVER ----------------------- */
+/* ----------------------- SERVER START ----------------------- */
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`✅ Server running at http://localhost:${PORT}`));
