@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from "react";
 import Sidebar from "../navigation/sidenav.jsx";
 import "./visualizer.css";
 
-// 🔹 Example network data
 const networkData = {
   network: "192.168.1.1/24",
   devices: [
@@ -17,15 +16,13 @@ const networkData = {
   ],
 };
 
-// 🧠 Convert network data → visualizer format
+// 🧠 Map raw network data to structured device list
 const mapNetworkData = (data) => {
   if (!data || !data.devices) return [];
-
   return data.devices.map((dev, i) => {
     const ip = dev.ips?.[0] || "N/A";
     const isRouter = ip.endsWith(".1");
     const vendorName = dev.vendor === "Unknown" ? dev.mac : dev.vendor.split(" ")[0];
-
     return {
       id: i,
       name: isRouter ? "Router-Gateway" : vendorName,
@@ -39,14 +36,11 @@ const mapNetworkData = (data) => {
   });
 };
 
-// 🔗 Connect router → all devices
+// ⚙️ Generate link list between router and devices
 const makeLinks = (devices) => {
   const hub = devices.find((d) => d.type === "hub");
   if (!hub) return [];
-
-  return devices
-    .filter((d) => d.id !== hub.id)
-    .map((d) => ({ from: hub.id, to: d.id }));
+  return devices.filter((d) => d.id !== hub.id).map((d) => ({ from: hub.id, to: d.id }));
 };
 
 export default function Visualizer() {
@@ -56,13 +50,28 @@ export default function Visualizer() {
   const [positions, setPositions] = useState({});
   const [size, setSize] = useState({ width: 800, height: 400 });
   const [showDesc, setShowDesc] = useState(true);
+  const [draggedNode, setDraggedNode] = useState(null);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
 
-  // 🌀 Compute node positions (perfect circle)
+  // 🧷 Load saved positions from localStorage (if any)
   useEffect(() => {
+    const saved = localStorage.getItem("devicePositions");
+    if (saved) {
+      try {
+        setPositions(JSON.parse(saved));
+      } catch (e) {
+        console.error("Failed to parse saved positions:", e);
+      }
+    }
+  }, []);
+
+  // 🌀 Compute circular layout if no saved positions
+  useEffect(() => {
+    if (Object.keys(positions).length > 0) return;
+
     const computePositions = () => {
       const el = containerRef.current;
       if (!el) return;
-
       const rect = el.getBoundingClientRect();
       const W = Math.max(600, rect.width);
       const H = Math.max(400, rect.height);
@@ -77,7 +86,6 @@ export default function Visualizer() {
 
       const newPos = {};
       if (hub) newPos[hub.id] = { x: cx, y: cy };
-
       others.forEach((dev, i) => {
         const angle = (i / others.length) * Math.PI * 2;
         newPos[dev.id] = {
@@ -85,19 +93,56 @@ export default function Visualizer() {
           y: cy + Math.sin(angle) * radius,
         };
       });
-
       setPositions(newPos);
     };
 
     computePositions();
     window.addEventListener("resize", computePositions);
     return () => window.removeEventListener("resize", computePositions);
-  }, [devices]);
+  }, [devices, positions]);
 
-  // ♻️ Compute links
+  // 🔗 Generate links
   useEffect(() => {
     if (devices.length > 0) setLinks(makeLinks(devices));
   }, [devices]);
+
+  // 💾 Save positions on change
+  useEffect(() => {
+    if (Object.keys(positions).length > 0) {
+      localStorage.setItem("devicePositions", JSON.stringify(positions));
+    }
+  }, [positions]);
+
+  // 🖱️ Dragging Handlers
+  const handleMouseDown = (id, e) => {
+    e.stopPropagation();
+    const svg = e.target.ownerSVGElement;
+    const pt = svg.createSVGPoint();
+    pt.x = e.clientX;
+    pt.y = e.clientY;
+    const cursor = pt.matrixTransform(svg.getScreenCTM().inverse());
+    const pos = positions[id];
+    setDraggedNode(id);
+    setOffset({ x: pos.x - cursor.x, y: pos.y - cursor.y });
+  };
+
+  const handleMouseMove = (e) => {
+    if (!draggedNode) return;
+    const svg = e.target.ownerSVGElement || e.target;
+    const pt = svg.createSVGPoint();
+    pt.x = e.clientX;
+    pt.y = e.clientY;
+    const cursor = pt.matrixTransform(svg.getScreenCTM().inverse());
+    setPositions((prev) => ({
+      ...prev,
+      [draggedNode]: {
+        x: cursor.x + offset.x,
+        y: cursor.y + offset.y,
+      },
+    }));
+  };
+
+  const handleMouseUp = () => setDraggedNode(null);
 
   return (
     <div className="visualizer-page">
@@ -105,11 +150,17 @@ export default function Visualizer() {
       <div className="visualizer-wrap" ref={containerRef}>
         <div className="visualizer-header">
           <h1>Network Visualizer</h1>
-          <button
-            className="desc-toggle-btn"
-            onClick={() => setShowDesc((prev) => !prev)}
-          >
+          <button className="desc-toggle-btn" onClick={() => setShowDesc((p) => !p)}>
             {showDesc ? "Hide Descriptions" : "Show Descriptions"}
+          </button>
+          <button
+            className="reset-btn"
+            onClick={() => {
+              localStorage.removeItem("devicePositions");
+              window.location.reload();
+            }}
+          >
+            Reset Layout
           </button>
         </div>
 
@@ -119,6 +170,8 @@ export default function Visualizer() {
             width={size.width}
             height={size.height}
             viewBox={`0 0 ${size.width} ${size.height}`}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
           >
             <defs>
               <linearGradient id="link-gradient" x1="0" y1="0" x2="1" y2="1">
@@ -136,15 +189,16 @@ export default function Visualizer() {
               const a = positions[link.from];
               const b = positions[link.to];
               if (!a || !b) return null;
-
               const mx = (a.x + b.x) / 2;
               const my = (a.y + b.y) / 2 - 40;
-
               return (
                 <path
                   key={idx}
                   className="wire-path alive"
                   d={`M ${a.x},${a.y} Q ${mx},${my} ${b.x},${b.y}`}
+                  stroke="url(#link-gradient)"
+                  strokeWidth="2"
+                  fill="none"
                 />
               );
             })}
@@ -156,14 +210,17 @@ export default function Visualizer() {
               const radius = d.type === "hub" ? 28 : 20;
 
               return (
-                <g key={d.id} transform={`translate(${pos.x}, ${pos.y})`}>
-                  {/* Node circle */}
+                <g
+                  key={d.id}
+                  transform={`translate(${pos.x}, ${pos.y})`}
+                  onMouseDown={(e) => handleMouseDown(d.id, e)}
+                  style={{ cursor: "grab" }}
+                >
                   <circle
                     r={radius}
-                    className={`node-circle online ${d.type === "hub" ? "hub" : ""}`}
+                    className={`node-circle ${d.type === "hub" ? "hub" : "online"}`}
                     fill={d.type === "hub" ? "url(#hub-gradient)" : "#00bfff"}
                   />
-                  {/* Node icon */}
                   <text
                     x="0"
                     y="6"
@@ -171,37 +228,17 @@ export default function Visualizer() {
                     fontSize="18"
                     fill="#fff"
                     fontWeight={700}
+                    pointerEvents="none"
                   >
                     {d.icon}
                   </text>
 
-                  {/* Branching lines */}
-                  <g>
-                    {[...Array(4)].map((_, i) => {
-                      const angle = (i * Math.PI) / 2;
-                      const length = 8 + Math.random() * 4;
-                      return (
-                        <line
-                          key={i}
-                          x1={0}
-                          y1={0}
-                          x2={Math.cos(angle) * length}
-                          y2={Math.sin(angle) * length}
-                          stroke="#00bfff"
-                          strokeWidth={1.2}
-                          className="branch-line"
-                        />
-                      );
-                    })}
-                  </g>
-
-                  {/* 🔹 Show/hide descriptions */}
                   {showDesc && (
-                    <foreignObject x={-100} y={radius + 8} width={200} height={80}>
+                    <foreignObject x={-100} y={radius + 8} width={200} height={80} pointerEvents="none">
                       <div className="node-label">
                         <div className="node-name">{d.name}</div>
                         <div className="node-ip">{d.ip}</div>
-                        <div className={`node-status online`}>{d.status}</div>
+                        <div className="node-status online">{d.status}</div>
                       </div>
                     </foreignObject>
                   )}
