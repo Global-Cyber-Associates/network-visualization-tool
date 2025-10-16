@@ -15,6 +15,8 @@ import platform
 import re
 import socket
 import sys
+import os
+import json
 from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -26,7 +28,7 @@ except Exception:
 
 # scapy
 try:
-    from scapy.all import ARP, Ether, srp, conf, sr1, ICMP
+    from scapy.all import ARP, Ether, srp, conf, sr1, ICMP, get_if_list
 except Exception:
     sys.exit("scapy required. Install with: pip install scapy")
 
@@ -105,17 +107,68 @@ def auto_select_iface_and_network():
                 return iface, ip, netmask, str(network)
     return None, None, None, None
 
+def list_interfaces():
+    """Return a friendly list of interfaces available (netifaces + Scapy names)."""
+    scapy_ifaces = get_if_list()
+    infos = []
+    for iface in netifaces.interfaces():
+        addrs = netifaces.ifaddresses(iface)
+        ip = None
+        netmask = None
+        if netifaces.AF_INET in addrs:
+            entry = addrs[netifaces.AF_INET][0]
+            ip = entry.get("addr")
+            netmask = entry.get("netmask")
+        # Try to find matching scapy iface name
+        possible_scapy = [s for s in scapy_ifaces if iface.lower() in s.lower() or s.lower() in iface.lower()]
+        scapy_match = possible_scapy[0] if possible_scapy else None
+        infos.append({"netifaces_name": iface, "scapy_name": scapy_match, "ip": ip, "netmask": netmask})
+    return infos
+
 # ---------- Scans ----------
+def _attempt_bind_iface(iface_name):
+    """
+    Attempt to set scapy conf.iface to a matching scapy interface name.
+    Returns the actual iface used (or None if none set).
+    """
+    if not iface_name:
+        return None
+    scapy_list = get_if_list()
+    # If iface_name already looks like a scapy iface, set it directly if present
+    for s in scapy_list:
+        if s == iface_name:
+            try:
+                conf.iface = s
+                return s
+            except Exception:
+                pass
+    # Heuristic: find a scapy iface that contains or is contained by iface_name
+    for s in scapy_list:
+        if iface_name.lower() in s.lower() or s.lower() in iface_name.lower():
+            try:
+                conf.iface = s
+                return s
+            except Exception:
+                pass
+    # last resort: try to set conf.iface to the netifaces GUID name (windows sometimes requires it)
+    try:
+        conf.iface = iface_name
+        return iface_name
+    except Exception:
+        return None
+
 def arp_scan(network_cidr, iface=None, timeout=2):
     """Perform ARP scan, return dict ip->mac (mac normalized)."""
     print(f"[*] Attempting ARP scan on {network_cidr} (iface={iface}) ...")
     packet = Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst=str(network_cidr))
     kwargs = {"timeout": timeout, "verbose": False}
     # conf.iface may be needed for windows; try to set it but catch errors
+    actual_iface = None
     if iface:
         try:
-            conf.iface = iface
-            kwargs["iface"] = iface
+            actual_iface = _attempt_bind_iface(iface)
+            if actual_iface:
+                kwargs["iface"] = actual_iface
         except Exception:
             # don't fail; let srp try default
             pass
@@ -161,7 +214,7 @@ def ping_sweep(network_cidr, max_workers=200, timeout=0.5):
                 pass
     return alive
 
-# ---------- Merge & output ----------
+# ---------- Merge & dedupe ----------
 def merge_and_dedupe(arp_map, ping_list):
     """
     Merge arp_map (ip->mac) and ping_list (ips) into OrderedDict keyed by mac or 'ping-only:ip'
@@ -200,6 +253,40 @@ def print_results(mac_map):
             # ping-only
             print("{:<22} {:<20} {:<30} {:<8}".format(ips, "-", "Unknown (ping-only)", ""))
 
+def results_to_json(mac_map):
+    """Convert mac_map structure to JSON-friendly list."""
+    out = []
+    for entry in mac_map.values():
+        mac = entry["mac"]
+        ips = sorted(entry["ips"])
+        if mac:
+            vendor = safe_vendor_lookup(mac)
+            mobile = any(k in vendor.lower() for k in ["apple", "samsung", "xiaomi", "huawei", "oneplus", "pixel", "realme", "vivo"])
+            out.append({"mac": mac, "ips": ips, "vendor": vendor, "mobile": mobile, "ping_only": False})
+        else:
+            out.append({"mac": None, "ips": ips, "vendor": "Unknown (ping-only)", "mobile": False, "ping_only": True})
+    return out
+
+# ---------- Privilege check ----------
+def check_privileges():
+    """Return (is_elevated:bool, message:str)."""
+    try:
+        if platform.system().lower() == "windows":
+            import ctypes
+            try:
+                is_admin = ctypes.windll.shell32.IsUserAnAdmin() != 0
+            except Exception:
+                is_admin = False
+        else:
+            is_admin = (os.geteuid() == 0)
+    except Exception:
+        is_admin = False
+    if not is_admin:
+        msg = "[!] Warning: not running as Administrator/root. ARP & low-level scanning may fail or return incomplete results."
+    else:
+        msg = "[*] Running with elevated privileges."
+    return is_admin, msg
+
 # ---------- Main ----------
 def main():
     p = argparse.ArgumentParser(description="Safe network scanner with robust vendor lookup")
@@ -207,7 +294,15 @@ def main():
     p.add_argument("--network", type=str, help="explicit network CIDR (overrides auto-detect)")
     p.add_argument("--update-vendors", action="store_true", help="update local mac-vendor DB before scanning (requires internet)")
     p.add_argument("--no-arp", action="store_true", help="skip ARP scan (ping-only)")
+    # NEW: manual iface override and json output, and listing
+    p.add_argument("--iface", type=str, help="force interface name (netifaces name or scapy name)")
+    p.add_argument("--json", action="store_true", help="output results in JSON format")
+    p.add_argument("--list-ifaces", action="store_true", help="list detected interfaces (netifaces names + scapy matches) and exit")
     args = p.parse_args()
+
+    # Privilege check — warn but do not exit
+    is_elevated, msg = check_privileges()
+    print(msg)
 
     if args.update_vendors:
         if not MACLOOKUP_AVAILABLE:
@@ -220,29 +315,51 @@ def main():
             except Exception as e:
                 print("[!] update_vendors failed:", e)
 
+    # If user asked to list interfaces, show and exit
+    if args.list_ifaces:
+        infos = list_interfaces()
+        print("\nDetected interfaces (netifaces name -> scapy match) and IPs:\n")
+        for i in infos:
+            print("netifaces: {:<30} scapy_match: {:<25} ip: {:<15} netmask: {}".format(
+                i["netifaces_name"], str(i["scapy_name"]) if i["scapy_name"] else "-", i["ip"] if i["ip"] else "-", i["netmask"] if i["netmask"] else "-"
+            ))
+        return
+
     # determine network
     iface = None; ip = None; netmask = None; network_cidr = None
+    # If user passed explicit iface, we respect it (manual override)
+    if args.iface:
+        iface = args.iface
+
     if args.network:
         network_cidr = args.network
         print(f"Using explicit network: {network_cidr}")
     else:
         if args.auto:
-            iface, ip, netmask, network_cidr = auto_select_iface_and_network()
-            if not network_cidr:
+            auto_iface, auto_ip, auto_netmask, auto_network_cidr = auto_select_iface_and_network()
+            if not auto_network_cidr:
                 print("[!] Auto-detect failed. Try passing --network 192.168.x.0/24 or run without --auto for interactive.")
                 return
+            # If user didn't provide a manual iface, adopt auto-detected netifaces name
+            if not iface:
+                iface = auto_iface
+            ip, netmask, network_cidr = auto_ip, auto_netmask, auto_network_cidr
         else:
-            # try auto as default
-            iface, ip, netmask, network_cidr = auto_select_iface_and_network()
-            if not network_cidr:
+            # try auto as default (preserves original behavior)
+            auto_iface, auto_ip, auto_netmask, auto_network_cidr = auto_select_iface_and_network()
+            if not auto_network_cidr:
                 print("[!] Could not detect active interface/network. Provide --network explicitly.")
                 return
+            if not iface:
+                iface = auto_iface
+            ip, netmask, network_cidr = auto_ip, auto_netmask, auto_network_cidr
 
         print(f"Interface chosen: {iface}  IP: {ip}  Netmask: {netmask}")
         print(f"Detected network: {network_cidr}")
 
     arp_map = {}
     ping_list = []
+
     # ARP scan (if not disabled)
     if not args.no_arp:
         try:
@@ -263,7 +380,13 @@ def main():
         ping_list = []
 
     mac_map = merge_and_dedupe(arp_map, ping_list)
-    print_results(mac_map)
+
+    # Output results: JSON or pretty
+    if args.json:
+        out = results_to_json(mac_map)
+        print(json.dumps(out, indent=2))
+    else:
+        print_results(mac_map)
 
 if __name__ == "__main__":
     main()
