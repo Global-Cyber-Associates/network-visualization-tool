@@ -1,38 +1,62 @@
-body{
-    background-color:#f4f6f8;
-}
-.scan-container {
-  padding: 20px;
-  max-width: 800px;
-  margin: 0 auto;
-  margin-left:240px;
+body {
+  background-color: #0f172a;
+  margin: 0;
   font-family: Arial, sans-serif;
+  color: white;
 }
 
-.scan-container h2 {
-  margin-bottom: 15px;
+/* overall page layout */
+.scan-page {
+  display: flex;
+  min-height: 100vh;
+  background-color: #0f172a;
 }
 
-.scan-container button {
+/* main scan content */
+.scan-content {
+  flex: 1;
+  padding: 40px 60px;
+  background-color: #f4f6f8;
+  color: #111827;
+  border-radius: 16px;
+  margin: 40px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.15);
+  max-width: 1000px;
+  height: fit-content;
+  transition: all 0.3s ease;
+}
+
+/* heading + button */
+.scan-content h2 {
+  margin-bottom: 10px;
+}
+
+.description {
+  margin-bottom: 20px;
+  color: #555;
+}
+
+.scan-content button {
   padding: 10px 20px;
   background-color: #4f46e5;
   color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: 6px;
   cursor: pointer;
   margin-bottom: 20px;
   transition: background 0.2s ease;
 }
 
-.scan-container button:disabled {
+.scan-content button:hover:not(:disabled) {
+  background-color: #4338ca;
+}
+
+.scan-content button:disabled {
   background-color: #9ca3af;
   cursor: not-allowed;
 }
 
-.scan-container button:hover:not(:disabled) {
-  background-color: #4338ca;
-}
-
+/* error + table */
 .error {
   color: red;
   margin-top: 10px;
@@ -47,10 +71,126 @@ body{
 .scan-table th,
 .scan-table td {
   border: 1px solid #ddd;
-  padding: 8px;
+  padding: 10px;
   text-align: left;
 }
 
 .scan-table th {
   background-color: #f3f4f6;
+  color: #111827;
+}
+
+.scan-table td {
+  background-color: #ffffff;
+}
+
+.scan-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 20px;
+  position: relative;
+  z-index: 1;
+}
+
+.scan-output-table {
+  width: 100%;
+  margin-top: 20px;
+  position: relative;
+  z-index: 0;
+}
+
+button {
+  position: relative;
+  z-index: 2;
+}
+
+/* ========== WAVE LOADER ========== */
+/* From Uiverse.io by JkHuger */
+.wave-menu {
+  border: 4px solid #545FE5;
+  border-radius: 50px;
+  width: 200px;
+  height: 45px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  margin: 20px 0;
+  cursor: pointer;
+  transition: ease 0.2s;
+  position: relative;
+  background: #fff;
+}
+
+.wave-menu li {
+  list-style: none;
+  height: 30px;
+  width: 4px;
+  border-radius: 10px;
+  background: #545FE5;
+  margin: 0 6px;
+  padding: 0;
+  animation-name: wave1;
+  animation-duration: 0.3s;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+  transition: ease 0.2s;
+}
+
+.wave-menu li:nth-child(2) {
+  animation-name: wave2;
+  animation-delay: 0.2s;
+}
+
+.wave-menu li:nth-child(3) {
+  animation-name: wave3;
+  animation-delay: 0.23s;
+  animation-duration: 0.4s;
+}
+
+.wave-menu li:nth-child(4) {
+  animation-name: wave4;
+  animation-delay: 0.1s;
+  animation-duration: 0.3s;
+}
+
+.wave-menu li:nth-child(5) {
+  animation-delay: 0.5s;
+}
+
+.wave-menu li:nth-child(6) {
+  animation-name: wave2;
+  animation-duration: 0.5s;
+}
+
+.wave-menu li:nth-child(8) {
+  animation-name: wave4;
+  animation-delay: 0.4s;
+  animation-duration: 0.25s;
+}
+
+.wave-menu li:nth-child(9) {
+  animation-name: wave3;
+  animation-delay: 0.15s;
+}
+
+@keyframes wave1 {
+  from { transform: scaleY(1); }
+  to { transform: scaleY(0.5); }
+}
+
+@keyframes wave2 {
+  from { transform: scaleY(0.3); }
+  to { transform: scaleY(0.6); }
+}
+
+@keyframes wave3 {
+  from { transform: scaleY(0.6); }
+  to { transform: scaleY(0.8); }
+}
+
+@keyframes wave4 {
+  from { transform: scaleY(0.2); }
+  to { transform: scaleY(0.5); }
 }

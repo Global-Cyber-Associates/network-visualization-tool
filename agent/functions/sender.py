@@ -16,6 +16,7 @@ def send_scan_results(data, endpoint_path="ports"):
     - ports → {"results": [...]}
     - system → {"system": {...}}
     - network-scan → {"network": [...]}
+    - tasks → {"applications": [...], "background_processes": [...]}
     """
     if isinstance(data, str):
         data = json.loads(data)
@@ -25,6 +26,8 @@ def send_scan_results(data, endpoint_path="ports"):
         payload = {"system": data}
     elif endpoint_path == "network-scan":
         payload = {"network": data}
+    elif endpoint_path == "tasks":
+        payload = data  # Already contains {"applications": [...], "background_processes": [...]}
     else:
         payload = {"results": data}
 

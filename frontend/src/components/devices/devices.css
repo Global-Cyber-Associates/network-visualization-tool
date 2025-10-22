@@ -1,102 +1,135 @@
-/* ---------- Layout ---------- */
+/* ====== Page Layout ====== */
 .device-page {
   display: flex;
   min-height: 100vh;
   background: #0b1e2d;
+  font-family: "Segoe UI", Roboto, sans-serif;
   color: #dfe7f1;
-  font-family: "Inter", sans-serif;
 }
 
-/* ---------- Container ---------- */
+/* ====== Container for device cards ====== */
 .devices-container {
   flex: 1;
-  padding: 2rem;
+  padding: 24px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  background: #1b263b;
 }
 
-/* ---------- Header ---------- */
 .devices-title {
   font-size: 2rem;
-  color: #ffffff;
-  margin-bottom: 1rem;
-  font-weight: 700;
+  margin-bottom: 24px;
+  color: #a8dadc;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
-/* ---------- Grid ---------- */
+/* ====== Device List ====== */
 .device-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 1.5rem;
-  width: 100%;
-  max-width: 1100px;
-}
-
-/* ---------- Device Card ---------- */
-.device-card {
-  background: rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(10px);
-  border-radius: 16px;
-  padding: 1.5rem;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  gap: 16px;
+}
+
+/* ====== Device Card ====== */
+.device-card {
+  background: #1b263b;
+  border: 2px solid #3db2ff;
+  border-radius: 12px;
+  padding: 16px 20px;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
-.device-card:hover {
-  transform: translateY(-5px) scale(1.02);
-  box-shadow: 0 8px 18px rgba(255, 255, 255, 0.15);
-  background: rgba(255, 255, 255, 0.09);
+/* ====== Left Side (Icon + Info) ====== */
+.device-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
-/* ---------- Device Icon ---------- */
+/* ====== Device Icon ====== */
 .device-icon {
-  font-size: 2rem;
-  margin-bottom: 0.8rem;
+  font-size: 2.5rem;
+  color: #00bfff;
+  flex-shrink: 0;
 }
 
-/* ---------- Device Name ---------- */
+/* ====== Device Info Wrapper ====== */
+.device-info-wrapper {
+  display: flex;
+  justify-content: center;
+  width: 460px;
+  gap: 20px;
+}
+
+/* ====== Device Name ====== */
 .device-name {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #ffffff;
-  margin-bottom: 0.4rem;
-  text-align: center;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #ffb347;
+  display: flex;
+  align-items: center;
 }
 
-/* ---------- Device Info ---------- */
+/* ====== Device Info ====== */
+.device-info {
+  font-size: 0.85rem;
+  color: #dfe7f1;
+}
+
 .device-info p {
-  font-size: 0.88rem;
-  color: #b5c9da;
-  margin: 0.2rem 0;
-  text-align: center;
+  margin: 2px 0;
+  word-break: break-word;
 }
 
-/* ---------- Responsive ---------- */
+/* ====== Right Side: Action Buttons ====== */
+.device-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.action-btn {
+  background: #00bfff;
+  color: #0b1e2d;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.action-btn:hover {
+  background: #3db2ff;
+  transform: scale(1.05);
+}
+
+/* ====== Loading/Error ====== */
+.devices-container > div {
+  font-size: 1.2rem;
+  color: #fff;
+  text-align: center;
+  margin-top: 40px;
+}
+
+/* ====== Responsive ====== */
 @media (max-width: 768px) {
-  .devices-container {
-    padding: 1rem;
-  }
-
-  .devices-title {
-    font-size: 1.6rem;
-  }
-
   .device-card {
-    padding: 1.2rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
   }
 
-  .device-name {
-    font-size: 1rem;
+  .device-actions {
+    flex-direction: row;
+    gap: 8px;
+    width: 100%;
   }
 
-  .device-info p {
-    font-size: 0.8rem;
+  .action-btn {
+    flex: 1;
+    padding: 8px 0;
   }
 }
