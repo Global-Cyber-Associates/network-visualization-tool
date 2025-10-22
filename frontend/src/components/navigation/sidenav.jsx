@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { NavLink } from "react-router-dom";
-import { Menu, X } from "lucide-react"; // icons
+import { Menu, X, Usb } from "lucide-react";
 import "./sidenav.css";
 
 const Sidebar = () => {
@@ -14,6 +14,7 @@ const Sidebar = () => {
     { label: "Issues", path: "/issues" },
     { label: "Features", path: "/features" },
     { label: "Scan", path: "/scan" },
+    { label: "USB Control", path: "/usb" },
   ];
 
   return (
@@ -36,6 +37,8 @@ const Sidebar = () => {
                 }
                 end
               >
+                {/* Optional icon for USB section */}
+                {item.label === "USB Control" && <Usb size={16} style={{ marginRight: "6px" }} />}
                 {item.label}
               </NavLink>
             </li>

@@ -13,6 +13,7 @@ import protectedRoutes from "./api/protected.js";
 import portsRoutes from "./api/ports.js";
 import systemRoutes from "./api/system.js";
 import scanRunRouter from "./api/scanRun.js";
+import usbRoutes from "./api/usb.js";
 
 import tasksRoutes from "./api/tasks.js";
 
@@ -20,6 +21,23 @@ import User from "./models/User.js";
 
 const app = express();
 app.use(cors());
+// -----------------------------
+// Request / Response Logger
+// -----------------------------
+app.use((req, res, next) => {
+  const start = Date.now();
+
+  console.log(`[REQUEST] ${req.method} ${req.originalUrl} - Body:`, req.body);
+
+  // Capture response finish
+  res.on("finish", () => {
+    const duration = Date.now() - start;
+    console.log(`[RESPONSE] ${req.method} ${req.originalUrl} - Status: ${res.statusCode} - Duration: ${duration}ms`);
+  });
+
+  next();
+});
+
 app.use(bodyParser.json());
 
 const JWT_SECRET = "supersecretkey"; // move to .env later
@@ -38,10 +56,9 @@ app.use("/api", portsRoutes);
 app.use("/api", systemRoutes);
 app.use("/api/scan", scanRunRouter);
 app.use("/api", tasksRoutes);
+app.use("/api/usb", usbRoutes);
 
-/* ----------------------- SETUP / CONFIG ----------------------- */
 
-// Connect dynamically to MongoDB
 const connectToDB = async (mongoURI) => {
   try {
     await mongoose.connect(mongoURI, {
@@ -54,7 +71,6 @@ const connectToDB = async (mongoURI) => {
   }
 };
 
-// Load Mongo URI from config.json on startup
 if (fs.existsSync(CONFIG_PATH)) {
   try {
     const config = JSON.parse(fs.readFileSync(CONFIG_PATH, "utf-8"));
@@ -64,9 +80,6 @@ if (fs.existsSync(CONFIG_PATH)) {
   }
 }
 
-/* ----------------------- ROUTES ----------------------- */
-
-// Auth & app routes
 app.use("/api/auth", authRoutes);
 app.use("/api", protectedRoutes);
 app.use("/api", portsRoutes);
