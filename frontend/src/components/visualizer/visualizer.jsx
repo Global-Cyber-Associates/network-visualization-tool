@@ -2,6 +2,31 @@ import React, { useEffect, useRef, useState } from "react";
 import Sidebar from "../navigation/sidenav.jsx";
 import "./visualizer.css";
 
+const mapNetworkData = (data) => {
+  if (!data || !data.length) return [];
+  return data.map((dev, i) => {
+    const ip = dev.ip || "N/A";
+    const isRouter = ip.endsWith(".1");
+    const vendorName = dev.vendor === "Unknown" ? dev.mac : dev.vendor.split(" ")[0];
+    return {
+      id: i,
+      name: isRouter ? "Router-Gateway" : vendorName,
+      ip,
+      status: "Working",
+      vulnerable: false,
+      icon: isRouter ? "🛜" : "💻",
+      type: isRouter ? "hub" : "device",
+      power: true,
+    };
+  });
+};
+
+const makeLinks = (devices) => {
+  const hub = devices.find((d) => d.type === "hub");
+  if (!hub) return [];
+  return devices.filter((d) => d.id !== hub.id).map((d) => ({ from: hub.id, to: d.id }));
+};
+
 export default function Visualizer() {
   const containerRef = useRef(null);
   const [devices, setDevices] = useState([]);
@@ -12,63 +37,36 @@ export default function Visualizer() {
   const [draggedNode, setDraggedNode] = useState(null);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
 
-  // 🔄 Fetch devices from API
+  // 🕑 Fetch data + trigger script
+  const fetchData = async () => {
+    try {
+      // Trigger the backend script
+      await fetch("http://localhost:5000/api/visualizer-trigger/run", { method: "POST" });
+
+      // Fetch updated devices
+      const res = await fetch("http://localhost:5000/api/visualizer-data");
+      const data = await res.json();
+      const mapped = mapNetworkData(data);
+      setDevices(mapped);
+    } catch (err) {
+      console.error("Failed to fetch/update devices:", err);
+    }
+  };
+
+  // ⚡ Initial load + 15s interval
   useEffect(() => {
-    const fetchDevices = async () => {
-      try {
-        const res = await fetch("http://localhost:5000/api/visualizer-data");
-        const data = await res.json();
-
-        if (!Array.isArray(data)) {
-          console.error("API did not return an array:", data);
-          return;
-        }
-
-        // Map API data to frontend structure
-        const mapped = data.map((dev, i) => {
-          const ip = dev.ip || "N/A";
-          const vendorName = dev.vendor === "Unknown" ? dev.mac : dev.vendor.split(" ")[0];
-          return {
-            id: i,
-            name: vendorName,
-            ip,
-            status: dev.noAgent ? "No Agent" : "Working",
-            vulnerable: false,
-            icon: "💻",
-            type: "device",
-            power: true,
-          };
-        });
-
-        // Make first device hub if none ends with .1
-        const hasHub = mapped.some((d) => d.type === "hub");
-        if (!hasHub && mapped.length > 0) mapped[0].type = "hub";
-
-        console.log("Mapped devices:", mapped);
-        setDevices(mapped);
-      } catch (err) {
-        console.error("Failed to fetch visualizer data:", err);
-      }
-    };
-
-    fetchDevices();
+    fetchData(); // first load
+    const interval = setInterval(fetchData, 15000); // every 15 seconds
+    return () => clearInterval(interval);
   }, []);
 
-  // 🔗 Generate links from hub to devices
+  // 🔗 Generate links
   useEffect(() => {
-    const makeLinks = (devices) => {
-      const hub = devices.find((d) => d.type === "hub");
-      if (!hub) return [];
-      return devices.filter((d) => d.id !== hub.id).map((d) => ({ from: hub.id, to: d.id }));
-    };
-
     if (devices.length > 0) setLinks(makeLinks(devices));
   }, [devices]);
 
-  // 🌀 Compute circular layout
+  // 🌀 Layout calculation (reuse your existing logic)
   useEffect(() => {
-    if (!devices || devices.length === 0) return;
-
     const computePositions = () => {
       const el = containerRef.current;
       if (!el) return;
@@ -81,11 +79,11 @@ export default function Visualizer() {
       const cy = H / 2;
       const radius = Math.min(W, H) * 0.35;
 
-      const hub = devices.find((d) => d.type === "hub") || devices[0];
-      const others = devices.filter((d) => d.id !== hub.id);
+      const hub = devices.find((d) => d.type === "hub");
+      const others = devices.filter((d) => d.id !== hub?.id);
 
       const newPos = {};
-      newPos[hub.id] = { x: cx, y: cy };
+      if (hub) newPos[hub.id] = { x: cx, y: cy };
       others.forEach((dev, i) => {
         const angle = (i / others.length) * Math.PI * 2;
         newPos[dev.id] = {
@@ -93,7 +91,6 @@ export default function Visualizer() {
           y: cy + Math.sin(angle) * radius,
         };
       });
-
       setPositions(newPos);
     };
 
@@ -102,14 +99,8 @@ export default function Visualizer() {
     return () => window.removeEventListener("resize", computePositions);
   }, [devices]);
 
-  // 💾 Save positions to localStorage
-  useEffect(() => {
-    if (Object.keys(positions).length > 0) {
-      localStorage.setItem("devicePositions", JSON.stringify(positions));
-    }
-  }, [positions]);
+  // 🖱️ Drag handlers (reuse existing)
 
-  // 🖱️ Dragging handlers
   const handleMouseDown = (id, e) => {
     e.stopPropagation();
     const svg = e.target.ownerSVGElement;
@@ -180,7 +171,6 @@ export default function Visualizer() {
               </radialGradient>
             </defs>
 
-            {/* 🔗 Links */}
             {links.map((link, idx) => {
               const a = positions[link.from];
               const b = positions[link.to];
@@ -199,7 +189,6 @@ export default function Visualizer() {
               );
             })}
 
-            {/* 💻 Nodes */}
             {devices.map((d) => {
               const pos = positions[d.id];
               if (!pos) return null;

@@ -5,14 +5,12 @@ import ScanResult from "../models/ScanResult.js";
 import SystemInfo from "../models/system.js";
 import VisualizerData from "../models/VisualizerData.js";
 
-
-// Adjust path to the config file in parent folder
-const configPath = path.resolve("../config.json"); // <-- ../ because script is in test-scripts
+// Config
+const configPath = path.resolve("../config.json");
 const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
 const MONGO_URI = config.mongoURI;
 
-
-// 2️⃣ Connect to MongoDB
+// Connect to MongoDB
 mongoose.connect(MONGO_URI)
   .then(() => main())
   .catch((err) => console.error("MongoDB connection error:", err));
@@ -21,39 +19,32 @@ async function main() {
   try {
     console.log("[*] Fetching ScanResult and SystemInfo...");
 
+    // Latest scan result
     const latestScan = await ScanResult.findOne().sort({ createdAt: -1 });
     const scanDevices = latestScan?.devices || [];
 
+    // All system infos
     const systems = await SystemInfo.find();
 
-    const systemDevices = systems.map((d) => ({
-      ip: d.ip || d.internal_ip || "N/A",
-      mac: d.mac || "Unknown",
-      vendor: d.vendor || "Unknown",
-    }));
-
-    const scanMapped = scanDevices.map((d) => ({
-      ip: d.ips?.[0] || "N/A",
-      mac: d.mac || "Unknown",
-      vendor: d.vendor || "Unknown",
-    }));
-
-    // Merge and mark noAgent
-    const ipMap = {};
-
-    scanMapped.forEach((d) => {
-      ipMap[d.ip] = { ip: d.ip, mac: d.mac, vendor: d.vendor, noAgent: false };
+    // Flatten system IPs from wlan_ip arrays
+    const systemIPs = new Set();
+    systems.forEach(sys => {
+      (sys.wlan_ip || []).forEach(ipObj => {
+        const ip = (ipObj.address || "").trim();
+        if (ip) systemIPs.add(ip);
+      });
     });
 
-    systemDevices.forEach((d) => {
-      if (ipMap[d.ip]) {
-        ipMap[d.ip] = { ...ipMap[d.ip], mac: ipMap[d.ip].mac || d.mac, vendor: ipMap[d.ip].vendor || d.vendor, noAgent: false };
-      } else {
-        ipMap[d.ip] = { ip: d.ip, mac: d.mac, vendor: d.vendor, noAgent: true };
-      }
+    // Map scan devices and mark noAgent correctly
+    const finalDevices = scanDevices.map(dev => {
+      const ip = (dev.ips?.[0] || "N/A").trim();
+      return {
+        ip,
+        mac: dev.mac || "Unknown",
+        vendor: dev.vendor || "Unknown",
+        noAgent: ip === "N/A" ? true : !systemIPs.has(ip)
+      };
     });
-
-    const finalDevices = Object.values(ipMap);
 
     // Save to VisualizerData collection
     await VisualizerData.deleteMany({});
