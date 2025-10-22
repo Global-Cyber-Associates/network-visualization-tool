@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Sidebar from "../navigation/sidenav.jsx";
 import "./visualizer.css";
 
+// 🧠 Map raw network data to structured device list
 const mapNetworkData = (data) => {
   if (!data || !data.length) return [];
   return data.map((dev, i) => {
@@ -17,10 +18,12 @@ const mapNetworkData = (data) => {
       icon: isRouter ? "🛜" : "💻",
       type: isRouter ? "hub" : "device",
       power: true,
+      noAgent: dev.noAgent || false, // ⚠️ include noAgent flag
     };
   });
 };
 
+// ⚡ Generate links between hub and devices
 const makeLinks = (devices) => {
   const hub = devices.find((d) => d.type === "hub");
   if (!hub) return [];
@@ -40,7 +43,7 @@ export default function Visualizer() {
   // 🕑 Fetch data + trigger script
   const fetchData = async () => {
     try {
-      // Trigger the backend script
+      // Trigger backend script
       await fetch("http://localhost:5000/api/visualizer-trigger/run", { method: "POST" });
 
       // Fetch updated devices
@@ -65,7 +68,7 @@ export default function Visualizer() {
     if (devices.length > 0) setLinks(makeLinks(devices));
   }, [devices]);
 
-  // 🌀 Layout calculation (reuse your existing logic)
+  // 🌀 Layout calculation
   useEffect(() => {
     const computePositions = () => {
       const el = containerRef.current;
@@ -99,8 +102,7 @@ export default function Visualizer() {
     return () => window.removeEventListener("resize", computePositions);
   }, [devices]);
 
-  // 🖱️ Drag handlers (reuse existing)
-
+  // 🖱️ Drag handlers
   const handleMouseDown = (id, e) => {
     e.stopPropagation();
     const svg = e.target.ownerSVGElement;
@@ -171,6 +173,7 @@ export default function Visualizer() {
               </radialGradient>
             </defs>
 
+            {/* 🔗 Links */}
             {links.map((link, idx) => {
               const a = positions[link.from];
               const b = positions[link.to];
@@ -189,10 +192,15 @@ export default function Visualizer() {
               );
             })}
 
+            {/* 💻 Nodes */}
             {devices.map((d) => {
               const pos = positions[d.id];
               if (!pos) return null;
               const radius = d.type === "hub" ? 28 : 20;
+
+              // 🎨 Node fill based on type & noAgent
+              const fillColor = d.type === "hub" ? "url(#hub-gradient)" : d.noAgent ? "#ff4d4f" : "#00bfff";
+              const statusText = d.noAgent ? "No Agent" : d.status;
 
               return (
                 <g
@@ -203,8 +211,8 @@ export default function Visualizer() {
                 >
                   <circle
                     r={radius}
-                    className={`node-circle ${d.type === "hub" ? "hub" : "online"}`}
-                    fill={d.type === "hub" ? "url(#hub-gradient)" : "#00bfff"}
+                    className={`node-circle ${d.type === "hub" ? "hub" : d.noAgent ? "no-agent" : "online"}`}
+                    fill={fillColor}
                   />
                   <text
                     x="0"
@@ -223,7 +231,7 @@ export default function Visualizer() {
                       <div className="node-label">
                         <div className="node-name">{d.name}</div>
                         <div className="node-ip">{d.ip}</div>
-                        <div className="node-status online">{d.status}</div>
+                        <div className={`node-status ${d.noAgent ? "offline" : "online"}`}>{statusText}</div>
                       </div>
                     </foreignObject>
                   )}
