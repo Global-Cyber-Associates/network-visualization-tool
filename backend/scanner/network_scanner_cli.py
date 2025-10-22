@@ -3,10 +3,11 @@
 network_scanner_cli.py
 
 Usage:
-  python network_scanner_cli.py            # interactive / auto detect
-  python network_scanner_cli.py --auto     # auto-select interface
+  python network_scanner_cli.py            # auto-detect best LAN interface/network
+  python network_scanner_cli.py --auto     # same as default (kept for backward compatibility)
   python network_scanner_cli.py --network 192.168.1.0/24
   python network_scanner_cli.py --update-vendors  # refresh mac-vendor DB first
+  python network_scanner_cli.py --no-arp   # ping-only
 """
 
 import argparse
@@ -89,22 +90,93 @@ def safe_vendor_lookup(mac):
 
 # ---------- Interface & network detection ----------
 def auto_select_iface_and_network():
-    """Return (iface_name, ip, netmask, network_cidr) or (None, None, None, None)."""
+    """
+    Return (iface_name, ip, netmask, network_cidr) for the best LAN interface.
+    Strategy:
+      1. Try system default gateway interface (works on most platforms).
+      2. Prefer interfaces with names suggesting LAN/WiFi (wlan, wifi, eth, en, Ethernet, Wi-Fi).
+      3. Skip loopback, link-local and common virtual subnets (VirtualBox/VMware/Docker).
+      4. Fall back to first valid candidate found.
+    Returns (None, None, None, None) if no valid interface found.
+    """
+    ignore_prefixes = (
+        "127.",        # loopback
+        "169.254.",    # link-local
+        "192.168.56.", # VirtualBox host-only
+        "10.0.75.",    # Windows NAT / older VirtualBox
+        "172.17.",     # docker default bridge
+        "192.168.57.", # some VM nets
+        "192.168.60.", # example other vm nets
+    )
+    prefer_name_prefixes = ("wlan", "wifi", "eth", "en", "ethernet", "wi-fi", "wi_fi", "wl")
+    candidates = []
+
+    def is_ignored_ip(ip):
+        return any(ip.startswith(p) for p in ignore_prefixes)
+
+    # 1) Try default gateway interface (best guess)
+    try:
+        gws = netifaces.gateways()
+        if netifaces.AF_INET in gws:
+            # gws[AF_INET] is a list like [(gateway_ip, iface, is_default), ...] or tuple
+            gw_entry = gws[netifaces.AF_INET]
+            if isinstance(gw_entry, list) and gw_entry:
+                gw_iface = gw_entry[0][1]
+            elif isinstance(gw_entry, tuple) and len(gw_entry) >= 2:
+                gw_iface = gw_entry[1]
+            else:
+                gw_iface = None
+            if gw_iface:
+                addrs = netifaces.ifaddresses(gw_iface)
+                if netifaces.AF_INET in addrs:
+                    for entry in addrs[netifaces.AF_INET]:
+                        ip = entry.get("addr")
+                        netmask = entry.get("netmask")
+                        if not ip or not netmask:
+                            continue
+                        if is_ignored_ip(ip):
+                            break
+                        try:
+                            network = ipaddress.IPv4Network(f"{ip}/{netmask}", strict=False)
+                        except Exception:
+                            break
+                        return gw_iface, ip, netmask, str(network)
+    except Exception:
+        # don't fail; continue to other heuristics
+        pass
+
+    # 2) Iterate all interfaces and collect candidates while preferring LAN-like names
     for iface in netifaces.interfaces():
-        addrs = netifaces.ifaddresses(iface)
-        if netifaces.AF_INET in addrs:
-            for entry in addrs[netifaces.AF_INET]:
-                ip = entry.get("addr")
-                netmask = entry.get("netmask")
-                if not ip:
-                    continue
-                if ip.startswith("127.") or ip.startswith("169.254."):
-                    continue
-                try:
-                    network = ipaddress.IPv4Network(f"{ip}/{netmask}", strict=False)
-                except Exception:
-                    continue
+        try:
+            addrs = netifaces.ifaddresses(iface)
+        except Exception:
+            continue
+        if netifaces.AF_INET not in addrs:
+            continue
+        for entry in addrs[netifaces.AF_INET]:
+            ip = entry.get("addr")
+            netmask = entry.get("netmask")
+            if not ip or not netmask:
+                continue
+            if is_ignored_ip(ip):
+                continue
+            # skip obvious non-routable addresses
+            if ip.startswith("127.") or ip.startswith("169.254."):
+                continue
+            try:
+                network = ipaddress.IPv4Network(f"{ip}/{netmask}", strict=False)
+            except Exception:
+                continue
+            # If iface name looks like wifi/eth, return immediately
+            if any(iface.lower().startswith(pref) for pref in prefer_name_prefixes):
                 return iface, ip, netmask, str(network)
+            # else collect as candidate
+            candidates.append((iface, ip, netmask, str(network)))
+
+    # 3) Fallback: return first candidate if any
+    if candidates:
+        return candidates[0]
+
     return None, None, None, None
 
 def list_interfaces():
@@ -164,6 +236,7 @@ def arp_scan(network_cidr, iface=None, timeout=2):
     kwargs = {"timeout": timeout, "verbose": False}
     # conf.iface may be needed for windows; try to set it but catch errors
     actual_iface = None
+    # Attempt to set conf.iface for scapy when iface provided
     if iface:
         try:
             actual_iface = _attempt_bind_iface(iface)
@@ -179,7 +252,7 @@ def arp_scan(network_cidr, iface=None, timeout=2):
     result = {}
     for sent, received in answered:
         ip = received.psrc
-        mac = normalize_mac(received.hwsrc)
+        mac = normalize_mac(getattr(received, "hwsrc", None))
         result[ip] = mac
     return result
 
@@ -290,7 +363,7 @@ def check_privileges():
 # ---------- Main ----------
 def main():
     p = argparse.ArgumentParser(description="Safe network scanner with robust vendor lookup")
-    p.add_argument("--auto", action="store_true", help="auto-select interface")
+    p.add_argument("--auto", action="store_true", help="auto-select interface (default behavior)")
     p.add_argument("--network", type=str, help="explicit network CIDR (overrides auto-detect)")
     p.add_argument("--update-vendors", action="store_true", help="update local mac-vendor DB before scanning (requires internet)")
     p.add_argument("--no-arp", action="store_true", help="skip ARP scan (ping-only)")
@@ -335,25 +408,11 @@ def main():
         network_cidr = args.network
         print(f"Using explicit network: {network_cidr}")
     else:
-        if args.auto:
-            auto_iface, auto_ip, auto_netmask, auto_network_cidr = auto_select_iface_and_network()
-            if not auto_network_cidr:
-                print("[!] Auto-detect failed. Try passing --network 192.168.x.0/24 or run without --auto for interactive.")
-                return
-            # If user didn't provide a manual iface, adopt auto-detected netifaces name
-            if not iface:
-                iface = auto_iface
-            ip, netmask, network_cidr = auto_ip, auto_netmask, auto_network_cidr
-        else:
-            # try auto as default (preserves original behavior)
-            auto_iface, auto_ip, auto_netmask, auto_network_cidr = auto_select_iface_and_network()
-            if not auto_network_cidr:
-                print("[!] Could not detect active interface/network. Provide --network explicitly.")
-                return
-            if not iface:
-                iface = auto_iface
-            ip, netmask, network_cidr = auto_ip, auto_netmask, auto_network_cidr
-
+        # default: auto-detect (explicit --auto is equivalent)
+        iface, ip, netmask, network_cidr = auto_select_iface_and_network()
+        if not network_cidr:
+            print("[!] Could not detect active interface/network. Provide --network explicitly.")
+            return
         print(f"Interface chosen: {iface}  IP: {ip}  Netmask: {netmask}")
         print(f"Detected network: {network_cidr}")
 
@@ -363,7 +422,6 @@ def main():
     # ARP scan (if not disabled)
     if not args.no_arp:
         try:
-            # scapy iface binding: try using iface; if scapy/OS can't bind it may raise — catch and fallback
             arp_map = arp_scan(network_cidr, iface=iface, timeout=2)
             if not arp_map:
                 print("[!] ARP scan returned no results (will run ping sweep).")

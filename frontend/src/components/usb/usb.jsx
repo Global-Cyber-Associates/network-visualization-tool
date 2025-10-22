@@ -14,22 +14,26 @@ const UsbControl = () => {
   });
   const [activeTab, setActiveTab] = useState("pending");
   const [loading, setLoading] = useState(false);
-  const [rowAction, setRowAction] = useState(null);
 
-  // Fetch Devices
+  // ----------------------------------
+  // Fetch Devices by Status
+  // ----------------------------------
   const fetchDevices = async () => {
     setLoading(true);
     try {
-      const endpoints = ["pending", "approved", "denied", "blocked"];
-      const responses = await Promise.all(
-        endpoints.map((e) => axios.get(`${API_BASE}/${e}`))
-      );
-      setDevices(
-        endpoints.reduce((acc, key, i) => {
-          acc[key] = responses[i].data || [];
-          return acc;
-        }, {})
-      );
+      const [pendingRes, approvedRes, deniedRes, blockedRes] = await Promise.all([
+        axios.get(`${API_BASE}/pending`),
+        axios.get(`${API_BASE}/approved`),
+        axios.get(`${API_BASE}/denied`),
+        axios.get(`${API_BASE}/blocked`),
+      ]);
+
+      setDevices({
+        pending: pendingRes.data || [],
+        approved: approvedRes.data || [],
+        denied: deniedRes.data || [],
+        blocked: blockedRes.data || [],
+      });
     } catch (err) {
       console.error("Fetch error:", err);
       alert("Failed to fetch USB devices");
@@ -40,13 +44,15 @@ const UsbControl = () => {
 
   useEffect(() => {
     fetchDevices();
-    const interval = setInterval(fetchDevices, 10000);
+    const interval = setInterval(fetchDevices, 10000); // refresh every 10s
     return () => clearInterval(interval);
   }, []);
 
+  // ----------------------------------
   // Handle Status Change
+  // ----------------------------------
   const updateStatus = async (pnpid, action) => {
-    setRowAction(pnpid);
+    setLoading(true);
     try {
       const endpointMap = {
         approve: "approve",
@@ -59,30 +65,18 @@ const UsbControl = () => {
 
       const res = await axios.post(`${API_BASE}/${endpoint}`, { pnpid });
       console.log(res.data.message);
-
-      // Update UI without full refetch
-      setDevices((prev) => {
-        const updated = { ...prev };
-        for (const key in updated) {
-          updated[key] = updated[key].filter((d) => d.pnpid !== pnpid);
-        }
-
-        if (action === "approve") updated.approved.push({ ...res.data.approved });
-        if (action === "deny") updated.denied.push({ pnpid, status: "denied" });
-        if (action === "block") updated.blocked.push({ pnpid, status: "blocked" });
-        if (action === "unblock") updated.pending.push({ pnpid, status: "pending" });
-
-        return updated;
-      });
+      await fetchDevices();
     } catch (err) {
       console.error(`${action} failed:`, err);
       alert(`Action failed: ${err.response?.data?.message || err.message}`);
     } finally {
-      setRowAction(null);
+      setLoading(false);
     }
   };
 
+  // ----------------------------------
   // Render Table
+  // ----------------------------------
   const renderTable = (list, type) => (
     <table className="usb-table">
       <thead>
@@ -98,77 +92,80 @@ const UsbControl = () => {
       <tbody>
         {list.length === 0 ? (
           <tr>
-            <td colSpan="6" style={{ textAlign: "center", opacity: 0.6 }}>
+            <td colSpan="6" style={{ textAlign: "center" }}>
               No {type} devices
             </td>
           </tr>
         ) : (
           list.map((device) => (
-            <tr key={device._id || device.pnpid}>
-              <td>{device.username || "-"}</td>
-              <td title={device.pnpid}>
+            <tr key={device._id}>
+              <td>{device.username}</td>
+              <td
+                style={{ wordBreak: "break-all" }}
+                title={device.pnpid} // hover shows full ID
+              >
                 {device.pnpid?.length > 12
                   ? `${device.pnpid.slice(0, 12)}...`
                   : device.pnpid}
               </td>
-              <td>{device.model || "-"}</td>
+              <td>{device.model}</td>
               <td>{device.drive || "-"}</td>
-              <td className={`status-${type}`}>{type}</td>
+              <td className={`status-${device.status}`}>{device.status}</td>
               <td>
-                {rowAction === device.pnpid ? (
-                  <span className="processing">Processing...</span>
-                ) : (
+                {type === "pending" && (
                   <>
-                    {type === "pending" && (
-                      <>
-                        <button
-                          className="allow-btn"
-                          onClick={() => updateStatus(device.pnpid, "approve")}
-                        >
-                          Approve
-                        </button>
-                        <button
-                          className="deny-btn"
-                          onClick={() => updateStatus(device.pnpid, "deny")}
-                        >
-                          Deny
-                        </button>
-                        <button
-                          className="block-btn"
-                          onClick={() => updateStatus(device.pnpid, "block")}
-                        >
-                          Block
-                        </button>
-                      </>
-                    )}
-
-                    {type === "approved" && (
-                      <button
-                        className="block-btn"
-                        onClick={() => updateStatus(device.pnpid, "block")}
-                      >
-                        Block
-                      </button>
-                    )}
-
-                    {type === "blocked" && (
-                      <button
-                        className="allow-btn"
-                        onClick={() => updateStatus(device.pnpid, "unblock")}
-                      >
-                        Unblock
-                      </button>
-                    )}
-
-                    {type === "denied" && (
-                      <button
-                        className="allow-btn"
-                        onClick={() => updateStatus(device.pnpid, "approve")}
-                      >
-                        Re-Approve
-                      </button>
-                    )}
+                    <button
+                      className="allow-btn"
+                      disabled={loading}
+                      onClick={() => updateStatus(device.pnpid, "approve")}
+                    >
+                      Approve
+                    </button>
+                    <button
+                      className="deny-btn"
+                      disabled={loading}
+                      onClick={() => updateStatus(device.pnpid, "deny")}
+                    >
+                      Deny
+                    </button>
+                    <button
+                      className="block-btn"
+                      disabled={loading}
+                      onClick={() => updateStatus(device.pnpid, "block")}
+                    >
+                      Block
+                    </button>
                   </>
+                )}
+
+                {type === "approved" && (
+                  <button
+                    className="block-btn"
+                    disabled={loading}
+                    onClick={() => updateStatus(device.pnpid, "block")}
+                  >
+                    Block
+                  </button>
+                )}
+
+                {type === "blocked" && (
+                  <button
+                    className="allow-btn"
+                    disabled={loading}
+                    onClick={() => updateStatus(device.pnpid, "unblock")}
+                  >
+                    Unblock
+                  </button>
+                )}
+
+                {type === "denied" && (
+                  <button
+                    className="allow-btn"
+                    disabled={loading}
+                    onClick={() => updateStatus(device.pnpid, "approve")}
+                  >
+                    Re-Approve
+                  </button>
                 )}
               </td>
             </tr>
@@ -178,14 +175,14 @@ const UsbControl = () => {
     </table>
   );
 
+  // ----------------------------------
+  // UI Render
+  // ----------------------------------
   return (
     <div className="usb-control-page">
       <Sidebar />
       <div className="usb-control">
-        <div className="header">
-          <h1>USB Access Control</h1>
-          {loading && <div className="loader">⏳ Refreshing...</div>}
-        </div>
+        <h1>USB Access Control</h1>
 
         <div className="tab-header">
           {["pending", "approved", "denied", "blocked"].map((tab) => (
@@ -204,7 +201,7 @@ const UsbControl = () => {
         </div>
 
         <div className="tab-content">
-          {renderTable(devices[activeTab] || [], activeTab)}
+          {loading ? <p>Loading...</p> : renderTable(devices[activeTab] || [], activeTab)}
         </div>
       </div>
     </div>

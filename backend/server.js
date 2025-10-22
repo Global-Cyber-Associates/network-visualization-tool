@@ -1,11 +1,11 @@
+// server.js
 import express from "express";
 import cors from "cors";
 import bodyParser from "body-parser";
-import connectDB from "./db.js";
-import jwt from "jsonwebtoken";
-import bcrypt from "bcrypt";
 import fs from "fs";
 import mongoose from "mongoose";
+import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
 
 // Import routes
 import authRoutes from "./api/auth.js";
@@ -14,10 +14,12 @@ import portsRoutes from "./api/ports.js";
 import systemRoutes from "./api/system.js";
 import scanRunRouter from "./api/scanRun.js";
 import usbRoutes from "./api/usb.js";
-
 import tasksRoutes from "./api/tasks.js";
+import visualizerDataRoute from "./api/visualizerData.js";
 
+// Import models
 import User from "./models/User.js";
+import connectDB from "./db.js";
 
 const app = express();
 app.use(cors());
@@ -45,18 +47,8 @@ const CONFIG_PATH = "./config.json";
 
 /* ----------------------- DATABASE CONNECTION ----------------------- */
 
-// Connect to MongoDB using the default URI (from db.js)
+// Connect using default URI from db.js
 connectDB();
-
-// Dynamically connect to different MongoDB if needed
-// Use routes
-app.use("/api/auth", authRoutes);
-app.use("/api", protectedRoutes);
-app.use("/api", portsRoutes);
-app.use("/api", systemRoutes);
-app.use("/api/scan", scanRunRouter);
-app.use("/api", tasksRoutes);
-app.use("/api/usb", usbRoutes);
 
 
 const connectToDB = async (mongoURI) => {
@@ -84,13 +76,14 @@ app.use("/api/auth", authRoutes);
 app.use("/api", protectedRoutes);
 app.use("/api", portsRoutes);
 app.use("/api", systemRoutes);
-
-// 🟢 Network Scan API (Python + MongoDB)
 app.use("/api/scan", scanRunRouter);
+app.use("/api", tasksRoutes);
+app.use("/api/usb", usbRoutes);
+app.use("/api/visualizer-data", visualizerDataRoute);
 
 /* ----------------------- CONFIGURATION ENDPOINTS ----------------------- */
 
-// Check if app is configured (for setup page)
+// Check if app is configured
 app.get("/api/check-config", (req, res) => {
   try {
     if (fs.existsSync(CONFIG_PATH)) {
@@ -105,7 +98,7 @@ app.get("/api/check-config", (req, res) => {
   }
 });
 
-// First-time setup route: saves Mongo URI + admin user
+// First-time setup: save Mongo URI + admin user
 app.post("/api/setup", async (req, res) => {
   const { mongoURI, adminUsername, adminPassword } = req.body;
   if (!mongoURI || !adminUsername || !adminPassword)
