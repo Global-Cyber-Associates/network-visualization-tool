@@ -54,7 +54,7 @@ if (fs.existsSync(CONFIG_PATH)) {
   }
 }
 
-/* ----------------------- ROUTES ----------------------- */
+/* ---------------------- ROUTES ----------------------- */
 
 // Auth & app routes
 app.use("/api/auth", authRoutes);
