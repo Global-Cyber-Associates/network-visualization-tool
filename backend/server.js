@@ -1,3 +1,4 @@
+// server.js
 import express from "express";
 import cors from "cors";
 import bodyParser from "body-parser";
@@ -12,11 +13,18 @@ import protectedRoutes from "./api/protected.js";
 import portsRoutes from "./api/ports.js";
 import systemRoutes from "./api/system.js";
 import scanRunRouter from "./api/scanRun.js";
+<<<<<<< HEAD
 import usbRoutes from "./api/usb.js";
 import tasksRoutes from "./api/tasks.js";
 import visualizerDataRoute from "./api/visualizerData.js";
 
 // Import models and DB connection
+=======
+import tasksRoutes from "./api/tasks.js";
+import visualizerDataRoute from "./api/visualizerData.js";
+
+// Import models
+>>>>>>> origin/sugumar
 import User from "./models/User.js";
 import connectDB from "./db.js";
 
@@ -38,9 +46,16 @@ app.use((req, res, next) => {
   next();
 });
 
+<<<<<<< HEAD
 /* ----------------------- DATABASE CONNECTION ----------------------- */
 connectDB();
 
+=======
+// Connect using default URI from db.js
+connectDB();
+
+// Optional: Connect dynamically using config.json
+>>>>>>> origin/sugumar
 const connectToDB = async (mongoURI) => {
   try {
     await mongoose.connect(mongoURI, {
@@ -62,17 +77,34 @@ if (fs.existsSync(CONFIG_PATH)) {
   }
 }
 
+<<<<<<< HEAD
 /* ----------------------- ROUTES ----------------------- */
+=======
+/* ---------------------- ROUTES ----------------------- */
+
+// Auth & app routes
+>>>>>>> origin/sugumar
 app.use("/api/auth", authRoutes);
 app.use("/api", protectedRoutes);
 app.use("/api", portsRoutes);
 app.use("/api", systemRoutes);
 app.use("/api/scan", scanRunRouter);
+<<<<<<< HEAD
 app.use("/api/usb", usbRoutes);
 app.use("/api", tasksRoutes);
 app.use("/api/visualizer-data", visualizerDataRoute);
 
 /* ----------------------- CONFIGURATION ----------------------- */
+=======
+app.use("/api", tasksRoutes);
+
+// Visualizer data route
+app.use("/api/visualizer-data", visualizerDataRoute);
+
+/* ----------------------- CONFIGURATION ENDPOINTS ----------------------- */
+
+// Check if app is configured
+>>>>>>> origin/sugumar
 app.get("/api/check-config", (req, res) => {
   try {
     if (fs.existsSync(CONFIG_PATH)) {
@@ -87,6 +119,10 @@ app.get("/api/check-config", (req, res) => {
   }
 });
 
+<<<<<<< HEAD
+=======
+// First-time setup: save Mongo URI + admin user
+>>>>>>> origin/sugumar
 app.post("/api/setup", async (req, res) => {
   const { mongoURI, adminUsername, adminPassword } = req.body;
   if (!mongoURI || !adminUsername || !adminPassword)
