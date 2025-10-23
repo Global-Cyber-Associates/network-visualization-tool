@@ -24,27 +24,34 @@ export default function Visualizer() {
           return;
         }
 
-        // Map API data to frontend structure
+        // 🧠 Detect router IP (.1 ending)
+        const routerIp = data.find((dev) => dev.ip && dev.ip.endsWith(".1"))?.ip;
+
+        // Map API data
         const mapped = data.map((dev, i) => {
           const ip = dev.ip || "N/A";
-          const vendorName = dev.vendor === "Unknown" ? dev.mac : dev.vendor.split(" ")[0];
+          const isRouter = ip === routerIp;
+          const vendorName =
+            dev.vendor === "Unknown" ? dev.mac || "Unknown Device" : dev.vendor.split(" ")[0];
+
           return {
             id: i,
-            name: vendorName,
+            name: isRouter ? "Router" : vendorName,
             ip,
             status: dev.noAgent ? "No Agent" : "Working",
-            vulnerable: false,
-            icon: "💻",
-            type: "device",
-            power: true,
+            noAgent: dev.noAgent,
+            icon: isRouter ? "🛜" : dev.noAgent ? "💻" : "💻",
+            type: isRouter ? "router" : "device",
           };
         });
 
-        // Make first device hub if none ends with .1
-        const hasHub = mapped.some((d) => d.type === "hub");
-        if (!hasHub && mapped.length > 0) mapped[0].type = "hub";
+        // If no .1 found, fallback first as router
+        if (!mapped.some((d) => d.type === "router") && mapped.length > 0) {
+          mapped[0].type = "router";
+          mapped[0].name = "Router";
+          mapped[0].icon = "🛜";
+        }
 
-        console.log("Mapped devices:", mapped);
         setDevices(mapped);
       } catch (err) {
         console.error("Failed to fetch visualizer data:", err);
@@ -54,12 +61,12 @@ export default function Visualizer() {
     fetchDevices();
   }, []);
 
-  // 🔗 Generate links from hub to devices
+  // 🔗 Generate links from router to devices
   useEffect(() => {
     const makeLinks = (devices) => {
-      const hub = devices.find((d) => d.type === "hub");
-      if (!hub) return [];
-      return devices.filter((d) => d.id !== hub.id).map((d) => ({ from: hub.id, to: d.id }));
+      const router = devices.find((d) => d.type === "router");
+      if (!router) return [];
+      return devices.filter((d) => d.id !== router.id).map((d) => ({ from: router.id, to: d.id }));
     };
 
     if (devices.length > 0) setLinks(makeLinks(devices));
@@ -81,11 +88,11 @@ export default function Visualizer() {
       const cy = H / 2;
       const radius = Math.min(W, H) * 0.35;
 
-      const hub = devices.find((d) => d.type === "hub") || devices[0];
-      const others = devices.filter((d) => d.id !== hub.id);
+      const router = devices.find((d) => d.type === "router") || devices[0];
+      const others = devices.filter((d) => d.id !== router.id);
 
       const newPos = {};
-      newPos[hub.id] = { x: cx, y: cy };
+      newPos[router.id] = { x: cx, y: cy };
       others.forEach((dev, i) => {
         const angle = (i / others.length) * Math.PI * 2;
         newPos[dev.id] = {
@@ -102,14 +109,14 @@ export default function Visualizer() {
     return () => window.removeEventListener("resize", computePositions);
   }, [devices]);
 
-  // 💾 Save positions to localStorage
+  // 💾 Save positions
   useEffect(() => {
     if (Object.keys(positions).length > 0) {
       localStorage.setItem("devicePositions", JSON.stringify(positions));
     }
   }, [positions]);
 
-  // 🖱️ Dragging handlers
+  // 🖱️ Dragging
   const handleMouseDown = (id, e) => {
     e.stopPropagation();
     const svg = e.target.ownerSVGElement;
@@ -174,9 +181,17 @@ export default function Visualizer() {
                 <stop offset="0%" stopColor="#3db2ff" />
                 <stop offset="100%" stopColor="#00bfff" />
               </linearGradient>
-              <radialGradient id="hub-gradient" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="#ffb347" />
-                <stop offset="100%" stopColor="#ffcc33" />
+
+              {/* Router gradient */}
+              <radialGradient id="router-gradient" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor="#110eccff" />
+                <stop offset="100%" stopColor="#d17a16ff" />
+              </radialGradient>
+
+              {/* No Agent gradient */}
+              <radialGradient id="noagent-gradient" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor="#ff5f6d" />
+                <stop offset="100%" stopColor="#df0b0bff" />
               </radialGradient>
             </defs>
 
@@ -199,11 +214,16 @@ export default function Visualizer() {
               );
             })}
 
-            {/* 💻 Nodes */}
+            {/* 💻 / 🛜 Nodes */}
             {devices.map((d) => {
               const pos = positions[d.id];
               if (!pos) return null;
-              const radius = d.type === "hub" ? 28 : 20;
+
+              let fill = "#00bfff"; // default blue
+              if (d.type === "router") fill = "url(#router-gradient)";
+              else if (d.noAgent) fill = "url(#noagent-gradient)";
+
+              const radius = d.type === "router" ? 30 : 20;
 
               return (
                 <g
@@ -212,11 +232,7 @@ export default function Visualizer() {
                   onMouseDown={(e) => handleMouseDown(d.id, e)}
                   style={{ cursor: "grab" }}
                 >
-                  <circle
-                    r={radius}
-                    className={`node-circle ${d.type === "hub" ? "hub" : "online"}`}
-                    fill={d.type === "hub" ? "url(#hub-gradient)" : "#00bfff"}
-                  />
+                  <circle r={radius} fill={fill} stroke="#222" strokeWidth="1.5" />
                   <text
                     x="0"
                     y="6"
@@ -234,7 +250,13 @@ export default function Visualizer() {
                       <div className="node-label">
                         <div className="node-name">{d.name}</div>
                         <div className="node-ip">{d.ip}</div>
-                        <div className="node-status online">{d.status}</div>
+                        <div
+                          className={`node-status ${
+                            d.noAgent ? "no-agent" : "online"
+                          }`}
+                        >
+                          {d.status}
+                        </div>
                       </div>
                     </foreignObject>
                   )}
