@@ -1,12 +1,17 @@
 import mongoose from "mongoose";
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 import ScanResult from "../models/ScanResult.js";
 import SystemInfo from "../models/system.js";
 import VisualizerData from "../models/VisualizerData.js";
 
-// Config
-const configPath = path.resolve("../config.json");
+// 🔧 Resolve __dirname for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// 🔧 Absolute path to config.json in project root
+const configPath = path.resolve(__dirname, "../config.json");
 const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
 const MONGO_URI = config.mongoURI;
 

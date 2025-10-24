@@ -16,6 +16,7 @@ import scanRunRouter from "./api/scanRun.js";
 import usbRoutes from "./api/usb.js";
 import tasksRoutes from "./api/tasks.js";
 import visualizerDataRoute from "./api/visualizerData.js";
+import visualizerTrigger from "./api/visualizerTrigger.js";
 
 // Import models
 import User from "./models/User.js";
@@ -80,6 +81,7 @@ app.use("/api/scan", scanRunRouter);
 app.use("/api", tasksRoutes);
 app.use("/api/usb", usbRoutes);
 app.use("/api/visualizer-data", visualizerDataRoute);
+app.use("/api/visualizerTrigger", visualizerTrigger);
 
 /* ----------------------- CONFIGURATION ENDPOINTS ----------------------- */
 

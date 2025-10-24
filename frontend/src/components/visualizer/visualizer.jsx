@@ -12,67 +12,68 @@ export default function Visualizer() {
   const [draggedNode, setDraggedNode] = useState(null);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
 
-  // 🔄 Fetch devices from API
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+
+  // 💾 Restore saved positions
   useEffect(() => {
-    const fetchDevices = async () => {
-      try {
-        const res = await fetch("http://localhost:5000/api/visualizer-data");
-        const data = await res.json();
+    const saved = localStorage.getItem("devicePositions");
+    if (saved) setPositions(JSON.parse(saved));
+  }, []);
 
-        if (!Array.isArray(data)) {
-          console.error("API did not return an array:", data);
-          return;
-        }
+  // 🔄 Fetch devices from API
+  const fetchDevices = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/visualizer-data");
+      const data = await res.json();
+      if (!Array.isArray(data)) return;
 
-        // 🧠 Detect router IP (.1 ending)
-        const routerIp = data.find((dev) => dev.ip && dev.ip.endsWith(".1"))?.ip;
+      const routerIp = data.find((dev) => dev.ip && dev.ip.endsWith(".1"))?.ip;
 
-        // Map API data
-        const mapped = data.map((dev, i) => {
-          const ip = dev.ip || "N/A";
-          const isRouter = ip === routerIp;
-          const vendorName =
-            dev.vendor === "Unknown" ? dev.mac || "Unknown Device" : dev.vendor.split(" ")[0];
+      const mapped = data.map((dev, i) => {
+        const ip = dev.ip || "N/A";
+        const isRouter = ip === routerIp;
+        const vendorName =
+          dev.vendor === "Unknown" ? dev.mac || "Unknown Device" : dev.vendor.split(" ")[0];
 
-          return {
-            id: i,
-            name: isRouter ? "Router" : vendorName,
-            ip,
-            status: dev.noAgent ? "No Agent" : "Working",
-            noAgent: dev.noAgent,
-            icon: isRouter ? "🛜" : dev.noAgent ? "💻" : "💻",
-            type: isRouter ? "router" : "device",
-          };
-        });
+        return {
+          id: i,
+          name: isRouter ? "Router" : vendorName,
+          ip,
+          status: dev.noAgent ? "No Agent" : "Working",
+          noAgent: dev.noAgent,
+          icon: isRouter ? "🛜" : "💻",
+          type: isRouter ? "router" : "device",
+        };
+      });
 
-        // If no .1 found, fallback first as router
-        if (!mapped.some((d) => d.type === "router") && mapped.length > 0) {
-          mapped[0].type = "router";
-          mapped[0].name = "Router";
-          mapped[0].icon = "🛜";
-        }
-
-        setDevices(mapped);
-      } catch (err) {
-        console.error("Failed to fetch visualizer data:", err);
+      if (!mapped.some((d) => d.type === "router") && mapped.length > 0) {
+        mapped[0].type = "router";
+        mapped[0].name = "Router";
+        mapped[0].icon = "🛜";
       }
-    };
 
+      setDevices(mapped);
+    } catch (err) {
+      console.error("Failed to fetch visualizer data:", err);
+    }
+  };
+
+  useEffect(() => {
     fetchDevices();
   }, []);
 
-  // 🔗 Generate links from router to devices
+  // 🔗 Generate links
   useEffect(() => {
     const makeLinks = (devices) => {
       const router = devices.find((d) => d.type === "router");
       if (!router) return [];
       return devices.filter((d) => d.id !== router.id).map((d) => ({ from: router.id, to: d.id }));
     };
-
     if (devices.length > 0) setLinks(makeLinks(devices));
   }, [devices]);
 
-  // 🌀 Compute circular layout
+  // 🌀 Compute circular layout with header offset
   useEffect(() => {
     if (!devices || devices.length === 0) return;
 
@@ -80,25 +81,34 @@ export default function Visualizer() {
       const el = containerRef.current;
       if (!el) return;
       const rect = el.getBoundingClientRect();
+
+      const headerEl = document.querySelector(".visualizer-header");
+      const headerHeight = headerEl ? headerEl.offsetHeight : 0;
+
       const W = Math.max(600, rect.width);
       const H = Math.max(400, rect.height);
+
       setSize({ width: W, height: H });
 
       const cx = W / 2;
-      const cy = H / 2;
-      const radius = Math.min(W, H) * 0.35;
+      const cy = (H - headerHeight) / 2 + headerHeight; // center vertically with header
+
+      const radius = Math.min(W, H - headerHeight) * 0.35;
 
       const router = devices.find((d) => d.type === "router") || devices[0];
       const others = devices.filter((d) => d.id !== router.id);
 
-      const newPos = {};
-      newPos[router.id] = { x: cx, y: cy };
+      const newPos = { ...positions };
+      if (!newPos[router.id]) newPos[router.id] = { x: cx, y: cy };
+
       others.forEach((dev, i) => {
-        const angle = (i / others.length) * Math.PI * 2;
-        newPos[dev.id] = {
-          x: cx + Math.cos(angle) * radius,
-          y: cy + Math.sin(angle) * radius,
-        };
+        if (!newPos[dev.id]) {
+          const angle = (i / others.length) * Math.PI * 2;
+          newPos[dev.id] = {
+            x: cx + Math.cos(angle) * radius,
+            y: cy + Math.sin(angle) * radius,
+          };
+        }
       });
 
       setPositions(newPos);
@@ -138,14 +148,34 @@ export default function Visualizer() {
     const cursor = pt.matrixTransform(svg.getScreenCTM().inverse());
     setPositions((prev) => ({
       ...prev,
-      [draggedNode]: {
-        x: cursor.x + offset.x,
-        y: cursor.y + offset.y,
-      },
+      [draggedNode]: { x: cursor.x + offset.x, y: cursor.y + offset.y },
     }));
   };
 
   const handleMouseUp = () => setDraggedNode(null);
+
+  // ✅ Run Visualizer button
+  const handleRunVisualizer = async () => {
+    setLoading(true);
+    setMessage("Running visualizer...");
+    try {
+      const res = await fetch("http://localhost:5000/api/visualizerTrigger/run-visualizer", { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        setMessage("Visualizer updated successfully!");
+        await fetchDevices();
+      } else {
+        setMessage("Failed to run visualizer.");
+        console.error(data.error);
+      }
+    } catch (err) {
+      console.error(err);
+      setMessage("Error running visualizer.");
+    } finally {
+      setLoading(false);
+      setTimeout(() => setMessage(""), 4000);
+    }
+  };
 
   return (
     <div className="visualizer-page">
@@ -153,25 +183,35 @@ export default function Visualizer() {
       <div className="visualizer-wrap" ref={containerRef}>
         <div className="visualizer-header">
           <h1>Network Visualizer</h1>
-          <button className="desc-toggle-btn" onClick={() => setShowDesc((p) => !p)}>
-            {showDesc ? "Hide Descriptions" : "Show Descriptions"}
-          </button>
-          <button
-            className="reset-btn"
-            onClick={() => {
-              localStorage.removeItem("devicePositions");
-              window.location.reload();
-            }}
-          >
-            Reset Layout
-          </button>
+
+          <div className="visualizer-controls">
+            <button className="run-btn" onClick={handleRunVisualizer} disabled={loading}>
+              {loading ? "Running..." : "Run Visualizer"}
+            </button>
+
+            <button className="desc-toggle-btn" onClick={() => setShowDesc((p) => !p)}>
+              {showDesc ? "Hide Descriptions" : "Show Descriptions"}
+            </button>
+
+            <button
+              className="reset-btn"
+              onClick={() => {
+                localStorage.removeItem("devicePositions");
+                window.location.reload();
+              }}
+            >
+              Reset Layout
+            </button>
+          </div>
+
+          {message && <p className="status-msg">{message}</p>}
         </div>
 
         <div className="visualizer-canvas">
           <svg
             className="visualizer-svg"
-            width={size.width}
-            height={size.height}
+            width="100%"
+            height="100%"
             viewBox={`0 0 ${size.width} ${size.height}`}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
@@ -182,20 +222,17 @@ export default function Visualizer() {
                 <stop offset="100%" stopColor="#00bfff" />
               </linearGradient>
 
-              {/* Router gradient */}
               <radialGradient id="router-gradient" cx="50%" cy="50%" r="50%">
                 <stop offset="0%" stopColor="#110eccff" />
                 <stop offset="100%" stopColor="#d17a16ff" />
               </radialGradient>
 
-              {/* No Agent gradient */}
               <radialGradient id="noagent-gradient" cx="50%" cy="50%" r="50%">
                 <stop offset="0%" stopColor="#ff5f6d" />
                 <stop offset="100%" stopColor="#df0b0bff" />
               </radialGradient>
             </defs>
 
-            {/* 🔗 Links */}
             {links.map((link, idx) => {
               const a = positions[link.from];
               const b = positions[link.to];
@@ -214,12 +251,11 @@ export default function Visualizer() {
               );
             })}
 
-            {/* 💻 / 🛜 Nodes */}
             {devices.map((d) => {
               const pos = positions[d.id];
               if (!pos) return null;
 
-              let fill = "#00bfff"; // default blue
+              let fill = "#00bfff";
               if (d.type === "router") fill = "url(#router-gradient)";
               else if (d.noAgent) fill = "url(#noagent-gradient)";
 
@@ -250,11 +286,7 @@ export default function Visualizer() {
                       <div className="node-label">
                         <div className="node-name">{d.name}</div>
                         <div className="node-ip">{d.ip}</div>
-                        <div
-                          className={`node-status ${
-                            d.noAgent ? "no-agent" : "online"
-                          }`}
-                        >
+                        <div className={`node-status ${d.noAgent ? "no-agent" : "online"}`}>
                           {d.status}
                         </div>
                       </div>
