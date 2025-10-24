@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import Sidebar from "../navigation/sidenav.jsx";
+import VisualizerControls from "./visualizerControls";
 import "./visualizer.css";
 
 export default function Visualizer() {
@@ -11,7 +12,6 @@ export default function Visualizer() {
   const [showDesc, setShowDesc] = useState(true);
   const [draggedNode, setDraggedNode] = useState(null);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
-
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -91,7 +91,7 @@ export default function Visualizer() {
       setSize({ width: W, height: H });
 
       const cx = W / 2;
-      const cy = (H - headerHeight) / 2 + headerHeight; // center vertically with header
+      const cy = (H - headerHeight) / 2 + headerHeight;
 
       const radius = Math.min(W, H - headerHeight) * 0.35;
 
@@ -159,7 +159,9 @@ export default function Visualizer() {
     setLoading(true);
     setMessage("Running visualizer...");
     try {
-      const res = await fetch("http://localhost:5000/api/visualizerTrigger/run-visualizer", { method: "POST" });
+      const res = await fetch("http://localhost:5000/api/visualizerTrigger/run-visualizer", {
+        method: "POST",
+      });
       const data = await res.json();
       if (data.success) {
         setMessage("Visualizer updated successfully!");
@@ -184,27 +186,14 @@ export default function Visualizer() {
         <div className="visualizer-header">
           <h1>Network Visualizer</h1>
 
-          <div className="visualizer-controls">
-            <button className="run-btn" onClick={handleRunVisualizer} disabled={loading}>
-              {loading ? "Running..." : "Run Visualizer"}
-            </button>
-
-            <button className="desc-toggle-btn" onClick={() => setShowDesc((p) => !p)}>
-              {showDesc ? "Hide Descriptions" : "Show Descriptions"}
-            </button>
-
-            <button
-              className="reset-btn"
-              onClick={() => {
-                localStorage.removeItem("devicePositions");
-                window.location.reload();
-              }}
-            >
-              Reset Layout
-            </button>
-          </div>
-
-          {message && <p className="status-msg">{message}</p>}
+          {/* ⬇ Split buttons into separate component */}
+          <VisualizerControls
+            loading={loading}
+            message={message}
+            showDesc={showDesc}
+            setShowDesc={setShowDesc}
+            handleRunVisualizer={handleRunVisualizer}
+          />
         </div>
 
         <div className="visualizer-canvas">
