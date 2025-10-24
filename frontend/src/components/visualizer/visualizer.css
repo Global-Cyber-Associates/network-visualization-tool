@@ -114,7 +114,7 @@
 
 .node-label .node-name {
   font-weight: 700;
-  color: #ffb347;
+  color: #ffffff;
   margin-bottom: 2px;
 }
 
@@ -187,7 +187,7 @@
 
 .run-btn {
   background-color: #00bfff;
-  color: white;
+  color: rgb(14, 7, 7);
   padding: 8px 14px;
   border-radius: 8px;
   border: none;
