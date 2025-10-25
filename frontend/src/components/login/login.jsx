@@ -23,8 +23,14 @@ function Login({ onLogin }) {
       }
 
       const data = await response.json();
-      localStorage.setItem("token", data.token); // store token
+
+      // Save token in localStorage
+      localStorage.setItem("token", data.token);
+
+      // Notify App
       if (onLogin) onLogin(username);
+
+      // Navigate to dashboard
       navigate("/");
     } catch (err) {
       console.error("Login error:", err);
