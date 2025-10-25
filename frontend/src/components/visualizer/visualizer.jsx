@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import Sidebar from "../navigation/sidenav.jsx";
+import VisualizerControls from "./visualizerControls";
 import "./visualizer.css";
 
 export default function Visualizer() {
@@ -12,56 +13,79 @@ export default function Visualizer() {
   const [draggedNode, setDraggedNode] = useState(null);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
 
-  // 🔄 Fetch devices from API
+  // 💾 Restore saved positions
   useEffect(() => {
-    const fetchDevices = async () => {
-      try {
-        const res = await fetch("http://localhost:5000/api/visualizer-data");
-        const data = await res.json();
+    const saved = localStorage.getItem("devicePositions");
+    if (saved) setPositions(JSON.parse(saved));
+  }, []);
 
-        if (!Array.isArray(data)) {
-          console.error("API did not return an array:", data);
-          return;
-        }
+  // 🔄 Fetch devices from API
+  const fetchDevices = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/visualizer-data");
+      const data = await res.json();
+      if (!Array.isArray(data)) return;
 
-        // Map API data to frontend structure
-        const mapped = data.map((dev, i) => {
+      const routerIp = data.find((dev) => dev.ip && dev.ip.endsWith(".1"))?.ip;
+
+      setDevices((prevDevices) => {
+        const newDevicesMap = {};
+        data.forEach((dev, i) => {
           const ip = dev.ip || "N/A";
-          const vendorName = dev.vendor === "Unknown" ? dev.mac : dev.vendor.split(" ")[0];
-          return {
-            id: i,
-            name: vendorName,
+          const isRouter = ip === routerIp;
+          const vendorName =
+            dev.vendor === "Unknown" ? dev.mac || "Unknown Device" : dev.vendor.split(" ")[0];
+
+          newDevicesMap[ip] = {
             ip,
+            name: isRouter ? "Router" : vendorName,
             status: dev.noAgent ? "No Agent" : "Working",
-            vulnerable: false,
-            icon: "💻",
-            type: "device",
-            power: true,
+            noAgent: dev.noAgent,
+            icon: isRouter ? "🛜" : "💻",
+            type: isRouter ? "router" : "device",
           };
         });
 
-        // Make first device hub if none ends with .1
-        const hasHub = mapped.some((d) => d.type === "hub");
-        if (!hasHub && mapped.length > 0) mapped[0].type = "hub";
+        // Update existing devices
+        const updatedDevices = prevDevices.map((d) => {
+          const newData = newDevicesMap[d.ip];
+          return newData ? { ...d, ...newData } : d;
+        });
 
-        console.log("Mapped devices:", mapped);
-        setDevices(mapped);
-      } catch (err) {
-        console.error("Failed to fetch visualizer data:", err);
-      }
-    };
+        // Add new devices not in prevDevices
+        const existingIps = new Set(prevDevices.map((d) => d.ip));
+        Object.values(newDevicesMap).forEach((dev) => {
+          if (!existingIps.has(dev.ip)) updatedDevices.push({ ...dev, id: updatedDevices.length });
+        });
 
-    fetchDevices();
+        // Ensure router exists
+        if (!updatedDevices.some((d) => d.type === "router") && updatedDevices.length > 0) {
+          updatedDevices[0].type = "router";
+          updatedDevices[0].name = "Router";
+          updatedDevices[0].icon = "🛜";
+        }
+
+        return updatedDevices;
+      });
+    } catch (err) {
+      console.error("Failed to fetch visualizer data:", err);
+    }
+  };
+
+  // 🔁 Auto-refresh every 1 second
+  useEffect(() => {
+    fetchDevices(); // initial fetch
+    const interval = setInterval(fetchDevices, 1000);
+    return () => clearInterval(interval);
   }, []);
 
-  // 🔗 Generate links from hub to devices
+  // 🔗 Generate links
   useEffect(() => {
     const makeLinks = (devices) => {
-      const hub = devices.find((d) => d.type === "hub");
-      if (!hub) return [];
-      return devices.filter((d) => d.id !== hub.id).map((d) => ({ from: hub.id, to: d.id }));
+      const router = devices.find((d) => d.type === "router");
+      if (!router) return [];
+      return devices.filter((d) => d.id !== router.id).map((d) => ({ from: router.id, to: d.id }));
     };
-
     if (devices.length > 0) setLinks(makeLinks(devices));
   }, [devices]);
 
@@ -73,25 +97,32 @@ export default function Visualizer() {
       const el = containerRef.current;
       if (!el) return;
       const rect = el.getBoundingClientRect();
+
+      const headerEl = document.querySelector(".visualizer-header");
+      const headerHeight = headerEl ? headerEl.offsetHeight : 0;
+
       const W = Math.max(600, rect.width);
       const H = Math.max(400, rect.height);
       setSize({ width: W, height: H });
 
       const cx = W / 2;
-      const cy = H / 2;
-      const radius = Math.min(W, H) * 0.35;
+      const cy = (H - headerHeight) / 2 + headerHeight;
+      const radius = Math.min(W, H - headerHeight) * 0.35;
 
-      const hub = devices.find((d) => d.type === "hub") || devices[0];
-      const others = devices.filter((d) => d.id !== hub.id);
+      const router = devices.find((d) => d.type === "router") || devices[0];
+      const others = devices.filter((d) => d.id !== router.id);
 
-      const newPos = {};
-      newPos[hub.id] = { x: cx, y: cy };
+      const newPos = { ...positions };
+      if (!newPos[router.id]) newPos[router.id] = { x: cx, y: cy };
+
       others.forEach((dev, i) => {
-        const angle = (i / others.length) * Math.PI * 2;
-        newPos[dev.id] = {
-          x: cx + Math.cos(angle) * radius,
-          y: cy + Math.sin(angle) * radius,
-        };
+        if (!newPos[dev.id]) {
+          const angle = (i / others.length) * Math.PI * 2;
+          newPos[dev.id] = {
+            x: cx + Math.cos(angle) * radius,
+            y: cy + Math.sin(angle) * radius,
+          };
+        }
       });
 
       setPositions(newPos);
@@ -102,14 +133,14 @@ export default function Visualizer() {
     return () => window.removeEventListener("resize", computePositions);
   }, [devices]);
 
-  // 💾 Save positions to localStorage
+  // 💾 Save positions
   useEffect(() => {
     if (Object.keys(positions).length > 0) {
       localStorage.setItem("devicePositions", JSON.stringify(positions));
     }
   }, [positions]);
 
-  // 🖱️ Dragging handlers
+  // 🖱️ Dragging
   const handleMouseDown = (id, e) => {
     e.stopPropagation();
     const svg = e.target.ownerSVGElement;
@@ -131,10 +162,7 @@ export default function Visualizer() {
     const cursor = pt.matrixTransform(svg.getScreenCTM().inverse());
     setPositions((prev) => ({
       ...prev,
-      [draggedNode]: {
-        x: cursor.x + offset.x,
-        y: cursor.y + offset.y,
-      },
+      [draggedNode]: { x: cursor.x + offset.x, y: cursor.y + offset.y },
     }));
   };
 
@@ -146,25 +174,14 @@ export default function Visualizer() {
       <div className="visualizer-wrap" ref={containerRef}>
         <div className="visualizer-header">
           <h1>Network Visualizer</h1>
-          <button className="desc-toggle-btn" onClick={() => setShowDesc((p) => !p)}>
-            {showDesc ? "Hide Descriptions" : "Show Descriptions"}
-          </button>
-          <button
-            className="reset-btn"
-            onClick={() => {
-              localStorage.removeItem("devicePositions");
-              window.location.reload();
-            }}
-          >
-            Reset Layout
-          </button>
+          <VisualizerControls showDesc={showDesc} setShowDesc={setShowDesc} />
         </div>
 
         <div className="visualizer-canvas">
           <svg
             className="visualizer-svg"
-            width={size.width}
-            height={size.height}
+            width="100%"
+            height="100%"
             viewBox={`0 0 ${size.width} ${size.height}`}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
@@ -174,13 +191,16 @@ export default function Visualizer() {
                 <stop offset="0%" stopColor="#3db2ff" />
                 <stop offset="100%" stopColor="#00bfff" />
               </linearGradient>
-              <radialGradient id="hub-gradient" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="#ffb347" />
-                <stop offset="100%" stopColor="#ffcc33" />
+              <radialGradient id="router-gradient" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor="#110eccff" />
+                <stop offset="100%" stopColor="#d17a16ff" />
+              </radialGradient>
+              <radialGradient id="noagent-gradient" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor="#ff5f6d" />
+                <stop offset="100%" stopColor="#df0b0bff" />
               </radialGradient>
             </defs>
 
-            {/* 🔗 Links */}
             {links.map((link, idx) => {
               const a = positions[link.from];
               const b = positions[link.to];
@@ -199,11 +219,15 @@ export default function Visualizer() {
               );
             })}
 
-            {/* 💻 Nodes */}
             {devices.map((d) => {
               const pos = positions[d.id];
               if (!pos) return null;
-              const radius = d.type === "hub" ? 28 : 20;
+
+              let fill = "#00bfff";
+              if (d.type === "router") fill = "url(#router-gradient)";
+              else if (d.noAgent) fill = "url(#noagent-gradient)";
+
+              const radius = d.type === "router" ? 30 : 20;
 
               return (
                 <g
@@ -212,11 +236,7 @@ export default function Visualizer() {
                   onMouseDown={(e) => handleMouseDown(d.id, e)}
                   style={{ cursor: "grab" }}
                 >
-                  <circle
-                    r={radius}
-                    className={`node-circle ${d.type === "hub" ? "hub" : "online"}`}
-                    fill={d.type === "hub" ? "url(#hub-gradient)" : "#00bfff"}
-                  />
+                  <circle r={radius} fill={fill} stroke="#222" strokeWidth="1.5" />
                   <text
                     x="0"
                     y="6"
@@ -234,7 +254,9 @@ export default function Visualizer() {
                       <div className="node-label">
                         <div className="node-name">{d.name}</div>
                         <div className="node-ip">{d.ip}</div>
-                        <div className="node-status online">{d.status}</div>
+                        <div className={`node-status ${d.noAgent ? "no-agent" : "online"}`}>
+                          {d.status}
+                        </div>
                       </div>
                     </foreignObject>
                   )}

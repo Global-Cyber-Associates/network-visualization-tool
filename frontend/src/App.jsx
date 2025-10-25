@@ -11,6 +11,7 @@ import Login from "./components/login/login.jsx";
 import Setup from "./components/setup/Setup.jsx";
 import Scan from "./components/scan/scan.jsx";
 import TaskManager from "./components/devices/Taskmanager/taskmanager.jsx";
+import UsbControl from "./components/usb/usb.jsx";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -80,7 +81,7 @@ function App() {
                         <Route path="/issues" element={<Issues />} />
                         <Route path="/features" element={<Features />} />
                         <Route path="/scan" element={<Scan />} />
-                        <Route path="*" element={<Navigate to="/" replace />} />
+                        <Route path="/usb" element={<UsbControl />} />
                       </Routes>
                     </div>
                   </div>

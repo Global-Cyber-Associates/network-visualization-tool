@@ -13,12 +13,17 @@ import protectedRoutes from "./api/protected.js";
 import portsRoutes from "./api/ports.js";
 import systemRoutes from "./api/system.js";
 import scanRunRouter from "./api/scanRun.js";
+import usbRoutes from "./api/usb.js";
 import tasksRoutes from "./api/tasks.js";
 import visualizerDataRoute from "./api/visualizerData.js";
+import visualizerTrigger from "./api/visualizerTrigger.js";
 
 // Import models
 import User from "./models/User.js";
 import connectDB from "./db.js";
+
+// Import visualizer continuous sync
+import { startContinuousSync } from "./visualizer-script/visualizer.js";
 
 const app = express();
 app.use(cors());
@@ -27,12 +32,25 @@ app.use(bodyParser.json());
 const JWT_SECRET = "supersecretkey"; // move to .env later
 const CONFIG_PATH = "./config.json";
 
-/* ----------------------- DATABASE CONNECTION ----------------------- */
+// -----------------------------
+// Request / Response Logger
+// -----------------------------
+app.use((req, res, next) => {
+  const start = Date.now();
+  console.log(`[REQUEST] ${req.method} ${req.originalUrl} - Body:`, req.body);
+  res.on("finish", () => {
+    const duration = Date.now() - start;
+    console.log(
+      `[RESPONSE] ${req.method} ${req.originalUrl} - Status: ${res.statusCode} - Duration: ${duration}ms`
+    );
+  });
+  next();
+});
 
-// Connect using default URI from db.js
+// ----------------------- DATABASE CONNECTION -----------------------
 connectDB();
 
-// Optional: Connect dynamically using config.json
+// Dynamic config-based connection
 const connectToDB = async (mongoURI) => {
   try {
     await mongoose.connect(mongoURI, {
@@ -54,22 +72,18 @@ if (fs.existsSync(CONFIG_PATH)) {
   }
 }
 
-/* ----------------------- ROUTES ----------------------- */
-
-// Auth & app routes
+// ----------------------- ROUTES -----------------------
 app.use("/api/auth", authRoutes);
 app.use("/api", protectedRoutes);
 app.use("/api", portsRoutes);
 app.use("/api", systemRoutes);
 app.use("/api/scan", scanRunRouter);
 app.use("/api", tasksRoutes);
-
-// Visualizer data route
+app.use("/api/usb", usbRoutes);
 app.use("/api/visualizer-data", visualizerDataRoute);
+app.use("/api/visualizerTrigger", visualizerTrigger);
 
-/* ----------------------- CONFIGURATION ENDPOINTS ----------------------- */
-
-// Check if app is configured
+// ----------------------- CONFIGURATION ENDPOINTS -----------------------
 app.get("/api/check-config", (req, res) => {
   try {
     if (fs.existsSync(CONFIG_PATH)) {
@@ -84,14 +98,17 @@ app.get("/api/check-config", (req, res) => {
   }
 });
 
-// First-time setup: save Mongo URI + admin user
 app.post("/api/setup", async (req, res) => {
   const { mongoURI, adminUsername, adminPassword } = req.body;
   if (!mongoURI || !adminUsername || !adminPassword)
     return res.status(400).json({ message: "All fields are required" });
 
   try {
-    fs.writeFileSync(CONFIG_PATH, JSON.stringify({ mongoURI }, null, 2), "utf-8");
+    fs.writeFileSync(
+      CONFIG_PATH,
+      JSON.stringify({ mongoURI }, null, 2),
+      "utf-8"
+    );
     await connectToDB(mongoURI);
 
     const existing = await User.findOne({ username: adminUsername });
@@ -109,10 +126,9 @@ app.post("/api/setup", async (req, res) => {
   }
 });
 
-/* ----------------------- LOGIN ----------------------- */
+// ----------------------- LOGIN -----------------------
 app.post("/login", async (req, res) => {
   const { username, password } = req.body;
-
   const user = await User.findOne({ username });
   if (!user) return res.status(401).json({ message: "Invalid credentials" });
 
@@ -123,6 +139,11 @@ app.post("/login", async (req, res) => {
   res.json({ token });
 });
 
-/* ----------------------- SERVER START ----------------------- */
+// ----------------------- START SERVER -----------------------
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`✅ Server running at http://localhost:${PORT}`));
+app.listen(PORT, () => {
+  console.log(`✅ Server running at http://localhost:${PORT}`);
+
+  // Start continuous visualizer auto-sync
+  startContinuousSync(30000); // runs every 30 seconds
+});

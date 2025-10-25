@@ -1,4 +1,3 @@
-# functions/network_scan.py
 import ipaddress
 import subprocess
 import platform
@@ -54,7 +53,6 @@ def scan_network(network_cidr=None, port_range="1-1024"):
 
     print(f"[*] Scanning network {network_cidr} ...")
 
-    # Ping all hosts concurrently
     with ThreadPoolExecutor(max_workers=50) as executor:
         futures = {executor.submit(ping_host, ip): ip for ip in network.hosts()}
         for future in as_completed(futures):
@@ -63,7 +61,6 @@ def scan_network(network_cidr=None, port_range="1-1024"):
                 print(f"[+] Host {ip} is alive")
                 active_hosts.append(str(ip))
 
-    # Optional: Scan ports on each active host (only if port_range is provided)
     network_results = []
     for ip in active_hosts:
         if port_range:
