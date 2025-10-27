@@ -13,8 +13,10 @@ import protectedRoutes from "./api/protected.js";
 import portsRoutes from "./api/ports.js";
 import systemRoutes from "./api/system.js";
 import scanRunRouter from "./api/scanRun.js";
+import usbRoutes from "./api/usb.js";
 import tasksRoutes from "./api/tasks.js";
 import visualizerDataRoute from "./api/visualizerData.js";
+import visualizerTrigger from "./api/visualizerTrigger.js";
 
 // Import models
 import User from "./models/User.js";
@@ -22,6 +24,23 @@ import connectDB from "./db.js";
 
 const app = express();
 app.use(cors());
+// -----------------------------
+// Request / Response Logger
+// -----------------------------
+app.use((req, res, next) => {
+  const start = Date.now();
+
+  console.log(`[REQUEST] ${req.method} ${req.originalUrl} - Body:`, req.body);
+
+  // Capture response finish
+  res.on("finish", () => {
+    const duration = Date.now() - start;
+    console.log(`[RESPONSE] ${req.method} ${req.originalUrl} - Status: ${res.statusCode} - Duration: ${duration}ms`);
+  });
+
+  next();
+});
+
 app.use(bodyParser.json());
 
 const JWT_SECRET = "supersecretkey"; // move to .env later
@@ -32,7 +51,7 @@ const CONFIG_PATH = "./config.json";
 // Connect using default URI from db.js
 connectDB();
 
-// Optional: Connect dynamically using config.json
+
 const connectToDB = async (mongoURI) => {
   try {
     await mongoose.connect(mongoURI, {
@@ -54,18 +73,15 @@ if (fs.existsSync(CONFIG_PATH)) {
   }
 }
 
-/* ----------------------- ROUTES ----------------------- */
-
-// Auth & app routes
 app.use("/api/auth", authRoutes);
 app.use("/api", protectedRoutes);
 app.use("/api", portsRoutes);
 app.use("/api", systemRoutes);
 app.use("/api/scan", scanRunRouter);
 app.use("/api", tasksRoutes);
-
-// Visualizer data route
+app.use("/api/usb", usbRoutes);
 app.use("/api/visualizer-data", visualizerDataRoute);
+app.use("/api/visualizerTrigger", visualizerTrigger);
 
 /* ----------------------- CONFIGURATION ENDPOINTS ----------------------- */
 
