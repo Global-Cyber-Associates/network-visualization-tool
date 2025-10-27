@@ -16,9 +16,10 @@ const sampleData = {
     { id: 1, name: "Workstation-01", type: "PC", ip: "192.168.1.10", status: "Working", department: "Finance", remoteActions: ["Isolate", "Kill Process", "View Logs"], icon: "💻" },
     { id: 2, name: "Laptop-Dev-02", type: "Laptop", ip: "192.168.1.22", status: "Offline", department: "Development", remoteActions: ["Isolate"], icon: "💻" },
     { id: 3, name: "Server-DB-01", type: "Server", ip: "192.168.1.5", status: "Working", department: "IT", remoteActions: ["Kill Process", "Restart Service"], icon: "🖥️" },
-    { id: 4, name: "Printer-HR-01", type: "Printer", ip: "192.168.1.40", status: "Sleep", department: "HR", remoteActions: ["Restart"], icon: "🖨️" },
+    { id: 4, name: "Printer-HR-01", type: "Printer", ip: "192.168.1.40", status: "Working", department: "HR", remoteActions: ["Restart"], icon: "🖨️" },
     { id: 5, name: "Workstation-02", type: "PC", ip: "192.168.1.11", status: "Working", department: "Sales", remoteActions: ["Isolate", "Kill Process"], icon: "💻" },
-    { id: 6, name: "Workstation-03", type: "PC", ip: "192.168.1.12", status: "Offline", department: "Marketing", remoteActions: ["Isolate"], icon: "💻" }
+    { id: 6, name: "Workstation-03", type: "PC", ip: "192.168.1.12", status: "Offline", department: "Marketing", remoteActions: ["Isolate"], icon: "💻" },
+    { id: 7, name: "Workstation-03", type: "PC", ip: "192.168.1.12", status: "Offline", department: "Marketing", remoteActions: ["Isolate"], icon: "💻" }
   ],
 
   // 3️⃣ Logs & Activity
