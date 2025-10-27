@@ -6,6 +6,7 @@ const Scan = () => {
   const [loading, setLoading] = useState(false);
   const [devices, setDevices] = useState([]);
   const [error, setError] = useState("");
+  
 
   const runScan = async () => {
     setLoading(true);
