@@ -25,10 +25,10 @@ if __name__ == "__main__":
     device_id = system_data.get("machine_id") or system_data.get("hostname") or "unknown-device"
 
     # --- 3. Network Scan ---
-    print("\n[*] Starting network scan...\n")
-    network_results = scan_network()
-    print("[*] Network Scan Results:\n", json.dumps(network_results, indent=2))
-    send_scan_results(network_results, endpoint_path="network-scan")
+    # print("\n[*] Starting network scan...\n")
+    # network_results = scan_network()
+    # print("[*] Network Scan Results:\n", json.dumps(network_results, indent=2))
+    # send_scan_results(network_results, endpoint_path="network-scan")
 
     # --- 4. Task Manager Data ---
     print("\n[*] Collecting task manager data...\n")
