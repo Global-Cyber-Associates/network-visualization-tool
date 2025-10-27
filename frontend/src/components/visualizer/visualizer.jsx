@@ -19,7 +19,7 @@ export default function Visualizer() {
     if (saved) setPositions(JSON.parse(saved));
   }, []);
 
-  // 🔄 Fetch devices from API
+  // 🔄 Fetch devices from backend
   const fetchDevices = async () => {
     try {
       const res = await fetch("http://localhost:5000/api/visualizer-data");
@@ -30,15 +30,18 @@ export default function Visualizer() {
 
       setDevices((prevDevices) => {
         const newDevicesMap = {};
-        data.forEach((dev, i) => {
+
+        data.forEach((dev) => {
           const ip = dev.ip || "N/A";
           const isRouter = ip === routerIp;
-          const vendorName =
-            dev.vendor === "Unknown" ? dev.mac || "Unknown Device" : dev.vendor.split(" ")[0];
+          const displayName =
+            dev.hostname && dev.hostname !== "Unknown"
+              ? dev.hostname
+              : "Unknown Device";
 
           newDevicesMap[ip] = {
             ip,
-            name: isRouter ? "Router" : vendorName,
+            name: isRouter ? "Router" : displayName,
             status: dev.noAgent ? "No Agent" : "Working",
             noAgent: dev.noAgent,
             icon: isRouter ? "🛜" : "💻",
@@ -46,20 +49,24 @@ export default function Visualizer() {
           };
         });
 
-        // Update existing devices
+        // 🧩 Merge updates
         const updatedDevices = prevDevices.map((d) => {
           const newData = newDevicesMap[d.ip];
           return newData ? { ...d, ...newData } : d;
         });
 
-        // Add new devices not in prevDevices
+        // ➕ Add new devices
         const existingIps = new Set(prevDevices.map((d) => d.ip));
         Object.values(newDevicesMap).forEach((dev) => {
-          if (!existingIps.has(dev.ip)) updatedDevices.push({ ...dev, id: updatedDevices.length });
+          if (!existingIps.has(dev.ip))
+            updatedDevices.push({ ...dev, id: updatedDevices.length });
         });
 
-        // Ensure router exists
-        if (!updatedDevices.some((d) => d.type === "router") && updatedDevices.length > 0) {
+        // 🛜 Ensure one router
+        if (
+          !updatedDevices.some((d) => d.type === "router") &&
+          updatedDevices.length > 0
+        ) {
           updatedDevices[0].type = "router";
           updatedDevices[0].name = "Router";
           updatedDevices[0].icon = "🛜";
@@ -68,24 +75,27 @@ export default function Visualizer() {
         return updatedDevices;
       });
     } catch (err) {
-      console.error("Failed to fetch visualizer data:", err);
+      console.error("❌ Failed to fetch visualizer data:", err);
     }
   };
 
   // 🔁 Auto-refresh every 1 second
   useEffect(() => {
-    fetchDevices(); // initial fetch
+    fetchDevices();
     const interval = setInterval(fetchDevices, 1000);
     return () => clearInterval(interval);
   }, []);
 
-  // 🔗 Generate links
+  // 🔗 Create links (router → devices)
   useEffect(() => {
     const makeLinks = (devices) => {
       const router = devices.find((d) => d.type === "router");
       if (!router) return [];
-      return devices.filter((d) => d.id !== router.id).map((d) => ({ from: router.id, to: d.id }));
+      return devices
+        .filter((d) => d.id !== router.id)
+        .map((d) => ({ from: router.id, to: d.id }));
     };
+
     if (devices.length > 0) setLinks(makeLinks(devices));
   }, [devices]);
 
@@ -96,8 +106,8 @@ export default function Visualizer() {
     const computePositions = () => {
       const el = containerRef.current;
       if (!el) return;
-      const rect = el.getBoundingClientRect();
 
+      const rect = el.getBoundingClientRect();
       const headerEl = document.querySelector(".visualizer-header");
       const headerHeight = headerEl ? headerEl.offsetHeight : 0;
 
@@ -111,8 +121,8 @@ export default function Visualizer() {
 
       const router = devices.find((d) => d.type === "router") || devices[0];
       const others = devices.filter((d) => d.id !== router.id);
-
       const newPos = { ...positions };
+
       if (!newPos[router.id]) newPos[router.id] = { x: cx, y: cy };
 
       others.forEach((dev, i) => {
@@ -140,7 +150,7 @@ export default function Visualizer() {
     }
   }, [positions]);
 
-  // 🖱️ Dragging
+  // 🖱️ Dragging logic
   const handleMouseDown = (id, e) => {
     e.stopPropagation();
     const svg = e.target.ownerSVGElement;
@@ -162,7 +172,10 @@ export default function Visualizer() {
     const cursor = pt.matrixTransform(svg.getScreenCTM().inverse());
     setPositions((prev) => ({
       ...prev,
-      [draggedNode]: { x: cursor.x + offset.x, y: cursor.y + offset.y },
+      [draggedNode]: {
+        x: cursor.x + offset.x,
+        y: cursor.y + offset.y,
+      },
     }));
   };
 
@@ -186,27 +199,33 @@ export default function Visualizer() {
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
           >
+            {/* 🎨 Gradients */}
             <defs>
               <linearGradient id="link-gradient" x1="0" y1="0" x2="1" y2="1">
                 <stop offset="0%" stopColor="#3db2ff" />
                 <stop offset="100%" stopColor="#00bfff" />
               </linearGradient>
+
               <radialGradient id="router-gradient" cx="50%" cy="50%" r="50%">
                 <stop offset="0%" stopColor="#110eccff" />
                 <stop offset="100%" stopColor="#d17a16ff" />
               </radialGradient>
+
               <radialGradient id="noagent-gradient" cx="50%" cy="50%" r="50%">
                 <stop offset="0%" stopColor="#ff5f6d" />
                 <stop offset="100%" stopColor="#df0b0bff" />
               </radialGradient>
             </defs>
 
+            {/* 🔗 Connections */}
             {links.map((link, idx) => {
               const a = positions[link.from];
               const b = positions[link.to];
               if (!a || !b) return null;
+
               const mx = (a.x + b.x) / 2;
               const my = (a.y + b.y) / 2 - 40;
+
               return (
                 <path
                   key={idx}
@@ -219,6 +238,7 @@ export default function Visualizer() {
               );
             })}
 
+            {/* 💻 Devices */}
             {devices.map((d) => {
               const pos = positions[d.id];
               if (!pos) return null;
@@ -236,7 +256,12 @@ export default function Visualizer() {
                   onMouseDown={(e) => handleMouseDown(d.id, e)}
                   style={{ cursor: "grab" }}
                 >
-                  <circle r={radius} fill={fill} stroke="#222" strokeWidth="1.5" />
+                  <circle
+                    r={radius}
+                    fill={fill}
+                    stroke="#222"
+                    strokeWidth="1.5"
+                  />
                   <text
                     x="0"
                     y="6"
@@ -250,11 +275,21 @@ export default function Visualizer() {
                   </text>
 
                   {showDesc && (
-                    <foreignObject x={-100} y={radius + 8} width={200} height={80} pointerEvents="none">
+                    <foreignObject
+                      x={-100}
+                      y={radius + 8}
+                      width={200}
+                      height={80}
+                      pointerEvents="none"
+                    >
                       <div className="node-label">
                         <div className="node-name">{d.name}</div>
                         <div className="node-ip">{d.ip}</div>
-                        <div className={`node-status ${d.noAgent ? "no-agent" : "online"}`}>
+                        <div
+                          className={`node-status ${
+                            d.noAgent ? "no-agent" : "online"
+                          }`}
+                        >
                           {d.status}
                         </div>
                       </div>

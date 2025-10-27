@@ -1,4 +1,3 @@
-// backend/visualizer/visualizer.js
 import mongoose from "mongoose";
 import fs from "fs";
 import path from "path";
@@ -25,34 +24,27 @@ async function connectDB() {
   }
 }
 
-// Helper to normalize IP (remove spaces, unwanted chars)
-function normalizeIP(ip) {
-  return (ip || "").trim().replace(/[^0-9.]/g, "");
-}
-
 export async function runVisualizerUpdate() {
   try {
     await connectDB();
 
-    // Fetch latest scan result
-    const latestScan = await ScanResult.findOne().sort({ createdAt: -1 });
-    if (!latestScan) {
+    // Fetch all scan entries (latest first)
+    const allScans = await ScanResult.find({}).sort({ createdAt: -1 });
+    if (!allScans.length) {
       console.log("⚠️ No scan results found.");
       return;
     }
 
-    // Fetch all scan entries
-    const allScans = await ScanResult.find({}).sort({ createdAt: -1 });
-
-    // Fetch system info collection
+    // Fetch all system info documents
     const systems = await SystemInfo.find();
-    const systemIPs = new Set();
-    const ipToHostname = new Map();
 
-    // Build IP-to-hostname map
+    // Build a mapping of IP -> hostname from system info
+    const ipToHostname = new Map();
+    const systemIPs = new Set();
+
     systems.forEach((sys) => {
       (sys.wlan_ip || []).forEach((ipObj) => {
-        const ip = normalizeIP(ipObj.address);
+        const ip = (ipObj.address || "").trim();
         if (ip) {
           systemIPs.add(ip);
           ipToHostname.set(ip, sys.hostname || "Unknown");
@@ -60,29 +52,22 @@ export async function runVisualizerUpdate() {
       });
     });
 
-    // Debug logs to verify mapping
-    console.log("🧠 Hostname Map:", Object.fromEntries(ipToHostname.entries()));
-
-    const scanIPs = allScans.map((d) => normalizeIP(d.ips?.[0]));
-    console.log("📡 ScanResult IPs:", scanIPs);
-
-    // Prepare visualizer data
+    // Build final visualizer data
     const finalDevices = allScans.map((dev) => {
-      const ip = normalizeIP(dev.ips?.[0]);
-      const hostname = ipToHostname.get(ip) || "Unknown";
+      const ip = (dev.ips?.[0] || "N/A").trim();
       const hasAgent = systemIPs.has(ip);
+      const hostname = hasAgent ? ipToHostname.get(ip) || "Unknown" : "Unknown";
 
       return {
         ip,
-        hostname,
         mac: dev.mac || "Unknown",
-        vendor: dev.vendor || "Unknown",
+        hostname, // 👈 Used by frontend for display
         ping_only: !!dev.ping_only,
-        noAgent: !hasAgent,
+        noAgent: ip === "N/A" ? true : !hasAgent,
       };
     });
 
-    // Clear and insert new visualizer data
+    // Replace all existing visualizer data
     await VisualizerData.deleteMany({});
     await VisualizerData.insertMany(finalDevices);
 
@@ -101,6 +86,6 @@ export async function runVisualizerUpdate() {
 export async function startContinuousSync() {
   while (true) {
     await runVisualizerUpdate();
-    await new Promise((resolve) => setTimeout(resolve, 3000)); // every 3 seconds
+    await new Promise((resolve) => setTimeout(resolve, 3000)); // Run every 3 seconds
   }
 }
