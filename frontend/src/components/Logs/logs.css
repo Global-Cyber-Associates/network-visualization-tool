@@ -1,172 +1,89 @@
-/* ---------- Layout ---------- */
 .logs-page {
   display: flex;
-  min-height: 100vh;
+  width: 100%;
+  height: 100vh;
   background: #0b1e2d;
-  color: #dfe7f1;
-  font-family: "Inter", sans-serif;
+  color: #e0e0e0;
+  font-family: "Segoe UI", sans-serif;
+  overflow: hidden;
 }
 
-/* ---------- Container ---------- */
 .logs-container {
-  flex: 1;
-  padding: 2rem;
-  background: #1b263b;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  overflow-x: auto;
-  border-radius: 0 16px 16px 0;
+  flex-grow: 1;
+  padding: 30px 50px;
+  background: #081522;
+  border-left: 1px solid #1b2c3f;
+  overflow-y: auto;
 }
 
-/* ---------- Header ---------- */
 .logs-title {
-  font-size: 2rem;
-  color: #ffffff;
-  font-weight: 700;
-  margin-bottom: 1.5rem;
-  text-align: center;
+  font-size: 22px;
+  font-weight: 600;
+  color: #a8dadc;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #1e3b58;
+  padding-bottom: 10px;
 }
 
-/* ---------- Table ---------- */
 .logs-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 800px;
+  border: 1px solid #1e3b58;
+  background: #0f2035;
+  box-shadow: 0 0 10px rgba(0, 191, 255, 0.1);
 }
 
 .logs-table th,
 .logs-table td {
-  padding: 0.75rem 1rem;
+  padding: 12px 16px;
   text-align: left;
-}
-
-.logs-table thead {
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(8px);
+  border-bottom: 1px solid #1b2f46;
 }
 
 .logs-table th {
-  color: #b5d0e0;
+  background: #13253b;
+  color: #b8e3ff;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.logs-table tr:hover {
+  background: rgba(0, 191, 255, 0.08);
+  transition: background 0.3s ease;
+}
+
+/* Status Colors */
+.status-success {
+  color: #00ff9d;
   font-weight: 600;
-  font-size: 0.95rem;
 }
 
-.logs-table tbody tr {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  transition: all 0.2s ease;
-}
-
-.logs-table tbody tr:hover {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.logs-table td {
-  color: #dfe7f1;
-  font-size: 0.9rem;
-  vertical-align: middle;
-}
-
-/* ---------- Status Badges ---------- */
-.status-badge {
-  display: inline-block;
-  padding: 0.25rem 0.65rem;
-  border-radius: 12px;
+.status-info {
+  color: #00bfff;
   font-weight: 600;
-  font-size: 0.85rem;
-  text-align: center;
-  min-width: 70px;
 }
 
-.status-Successful {
-  background: #28c76f33;
-  color: #28c76f;
-}
-
-.status-Detected {
-  background: #ff6b6b33;
-  color: #ff6b6b;
-}
-
-.status-Pending {
-  background: #f7b92433;
-  color: #f7b924;
-}
-
-.status-Info {
-  background: #00cfe833;
-  color: #00cfe8;
-}
-
-.status-Warning {
-  background: #ff9f4333;
-  color: #ff9f43;
-}
-
-.status-Critical {
-  background: #ea545533;
-  color: #ea5455;
-}
-
-/* ---------- Status Text Colors Only ---------- */
-.status-badge {
-  display: inline-block;
-  padding: 0.25rem 0.5rem;
-  border-radius: 12px;
+.status-warning {
+  color: #ffcc00;
   font-weight: 600;
-  font-size: 0.85rem;
-  text-align: center;
-  min-width: 70px;
-  background: transparent; /* No background */
 }
 
-/* Text colors only */
-.status-Successful {
-  color: #28c76f;
+.status-critical {
+  color: #ff5757;
+  font-weight: 600;
 }
 
-.status-Detected {
-  color: #ff6b6b;
+/* Row color highlight */
+.log-success td {
+  background: rgba(0, 255, 157, 0.05);
 }
-
-.status-Pending {
-  color: #f7b924;
+.log-info td {
+  background: rgba(0, 191, 255, 0.05);
 }
-
-.status-Info {
-  color: #00cfe8;
+.log-warning td {
+  background: rgba(255, 204, 0, 0.05);
 }
-
-.status-Warning {
-  color: #ff9f43;
-}
-
-.status-Critical {
-  color: #ea5455;
-}
-
-
-/* ---------- Responsive ---------- */
-@media (max-width: 1024px) {
-  .logs-container {
-    padding: 1rem;
-  }
-
-  .logs-table th,
-  .logs-table td {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.85rem;
-  }
-
-  .logs-title {
-    font-size: 1.6rem;
-  }
-}
-
-@media (max-width: 768px) {
-  .logs-table {
-    min-width: 100%;
-    display: block;
-    overflow-x: auto;
-  }
+.log-critical td {
+  background: rgba(255, 87, 87, 0.05);
 }
