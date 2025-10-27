@@ -16,7 +16,6 @@ import scanRunRouter from "./api/scanRun.js";
 import usbRoutes from "./api/usb.js";
 import tasksRoutes from "./api/tasks.js";
 import visualizerDataRoute from "./api/visualizerData.js";
-import visualizerTrigger from "./api/visualizerTrigger.js";
 
 // Import models
 import User from "./models/User.js";
@@ -24,6 +23,9 @@ import connectDB from "./db.js";
 
 // Import visualizer continuous sync
 import { startContinuousSync } from "./visualizer-script/visualizer.js";
+
+// ✅ Import visualizer live scanner
+import "./visualizer-script/visualizerScanner.js";
 
 const app = express();
 app.use(cors());
@@ -81,7 +83,6 @@ app.use("/api/scan", scanRunRouter);
 app.use("/api", tasksRoutes);
 app.use("/api/usb", usbRoutes);
 app.use("/api/visualizer-data", visualizerDataRoute);
-app.use("/api/visualizerTrigger", visualizerTrigger);
 
 // ----------------------- CONFIGURATION ENDPOINTS -----------------------
 app.get("/api/check-config", (req, res) => {
@@ -114,7 +115,10 @@ app.post("/api/setup", async (req, res) => {
     const existing = await User.findOne({ username: adminUsername });
     if (!existing) {
       const passwordHash = await bcrypt.hash(adminPassword, 10);
-      const newAdmin = new User({ username: adminUsername, password: passwordHash });
+      const newAdmin = new User({
+        username: adminUsername,
+        password: passwordHash,
+      });
       await newAdmin.save();
       console.log("✅ Admin user created:", adminUsername);
     }
@@ -135,7 +139,11 @@ app.post("/login", async (req, res) => {
   const isValid = await bcrypt.compare(password, user.password);
   if (!isValid) return res.status(401).json({ message: "Invalid credentials" });
 
-  const token = jwt.sign({ username: user.username }, JWT_SECRET, { expiresIn: "1h" });
+  const token = jwt.sign(
+    { username: user.username },
+    JWT_SECRET,
+    { expiresIn: "1h" }
+  );
   res.json({ token });
 });
 

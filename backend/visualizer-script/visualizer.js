@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import ScanResult from "../models/ScanResult.js";
+import ScanResult from "../models/VisualizerScanner.js";
 import SystemInfo from "../models/system.js";
 import VisualizerData from "../models/VisualizerData.js";
 
@@ -25,34 +25,64 @@ async function connectDB() {
   }
 }
 
-// Core update logic
+// Helper to normalize IP (remove spaces, unwanted chars)
+function normalizeIP(ip) {
+  return (ip || "").trim().replace(/[^0-9.]/g, "");
+}
+
 export async function runVisualizerUpdate() {
   try {
     await connectDB();
 
+    // Fetch latest scan result
     const latestScan = await ScanResult.findOne().sort({ createdAt: -1 });
-    const scanDevices = latestScan?.devices || [];
+    if (!latestScan) {
+      console.log("⚠️ No scan results found.");
+      return;
+    }
 
+    // Fetch all scan entries
+    const allScans = await ScanResult.find({}).sort({ createdAt: -1 });
+
+    // Fetch system info collection
     const systems = await SystemInfo.find();
-
     const systemIPs = new Set();
+    const ipToHostname = new Map();
+
+    // Build IP-to-hostname map
     systems.forEach((sys) => {
       (sys.wlan_ip || []).forEach((ipObj) => {
-        const ip = (ipObj.address || "").trim();
-        if (ip) systemIPs.add(ip);
+        const ip = normalizeIP(ipObj.address);
+        if (ip) {
+          systemIPs.add(ip);
+          ipToHostname.set(ip, sys.hostname || "Unknown");
+        }
       });
     });
 
-    const finalDevices = scanDevices.map((dev) => {
-      const ip = (dev.ips?.[0] || "N/A").trim();
+    // Debug logs to verify mapping
+    console.log("🧠 Hostname Map:", Object.fromEntries(ipToHostname.entries()));
+
+    const scanIPs = allScans.map((d) => normalizeIP(d.ips?.[0]));
+    console.log("📡 ScanResult IPs:", scanIPs);
+
+    // Prepare visualizer data
+    const finalDevices = allScans.map((dev) => {
+      const ip = normalizeIP(dev.ips?.[0]);
+      const hostname = ipToHostname.get(ip) || "Unknown";
+      const hasAgent = systemIPs.has(ip);
+
       return {
         ip,
+        hostname,
         mac: dev.mac || "Unknown",
         vendor: dev.vendor || "Unknown",
-        noAgent: ip === "N/A" ? true : !systemIPs.has(ip),
+        ping_only: !!dev.ping_only,
+        noAgent: !hasAgent,
       };
     });
 
+    // Clear and insert new visualizer data
     await VisualizerData.deleteMany({});
     await VisualizerData.insertMany(finalDevices);
 
@@ -67,10 +97,10 @@ export async function runVisualizerUpdate() {
   }
 }
 
-// Continuous async loop with ~30ms delay
+// Continuous background sync loop
 export async function startContinuousSync() {
   while (true) {
     await runVisualizerUpdate();
-    await new Promise((resolve) => setTimeout(resolve, 30)); // 30ms pause
+    await new Promise((resolve) => setTimeout(resolve, 3000)); // every 3 seconds
   }
 }
