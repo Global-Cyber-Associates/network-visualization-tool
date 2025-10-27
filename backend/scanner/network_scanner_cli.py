@@ -8,6 +8,9 @@ Usage:
   python network_scanner_cli.py --network 192.168.1.0/24
   python network_scanner_cli.py --update-vendors  # refresh mac-vendor DB first
   python network_scanner_cli.py --no-arp   # ping-only
+  python network_scanner_cli.py --list-ifaces
+  python network_scanner_cli.py --iface <iface-name>
+  python network_scanner_cli.py --json
 """
 
 import argparse
@@ -20,6 +23,7 @@ import os
 import json
 from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import time
 
 # network / iface detection
 try:
@@ -27,9 +31,9 @@ try:
 except Exception:
     sys.exit("netifaces required. Install with: pip install netifaces")
 
-# scapy
+# scapy (required for ARP)
 try:
-    from scapy.all import ARP, Ether, srp, conf, sr1, ICMP, get_if_list
+    from scapy.all import ARP, Ether, srp, conf, sr1, ICMP, get_if_list, UDP, IP, send, sr
 except Exception:
     sys.exit("scapy required. Install with: pip install scapy")
 
@@ -56,17 +60,14 @@ def normalize_mac(mac):
     mac = str(mac).strip()
     if mac == "":
         return None
-    # If contains separators, normalize them
     if re.search(r'[:\-]', mac):
         parts = re.split(r'[:\-]', mac)
         if len(parts) == 6:
             return ":".join(p.zfill(2).lower() for p in parts)
-    # Remove non-hex chars
     hexonly = re.sub(r'[^0-9a-fA-F]', '', mac)
     if len(hexonly) == 12:
         parts = [hexonly[i:i+2] for i in range(0, 12, 2)]
         return ":".join(p.lower() for p in parts)
-    # fallback: lowercase raw
     return mac.lower()
 
 def safe_vendor_lookup(mac):
@@ -118,14 +119,12 @@ def auto_select_iface_and_network():
     try:
         gws = netifaces.gateways()
         if netifaces.AF_INET in gws:
-            # gws[AF_INET] is a list like [(gateway_ip, iface, is_default), ...] or tuple
             gw_entry = gws[netifaces.AF_INET]
+            gw_iface = None
             if isinstance(gw_entry, list) and gw_entry:
                 gw_iface = gw_entry[0][1]
             elif isinstance(gw_entry, tuple) and len(gw_entry) >= 2:
                 gw_iface = gw_entry[1]
-            else:
-                gw_iface = None
             if gw_iface:
                 addrs = netifaces.ifaddresses(gw_iface)
                 if netifaces.AF_INET in addrs:
@@ -142,7 +141,6 @@ def auto_select_iface_and_network():
                             break
                         return gw_iface, ip, netmask, str(network)
     except Exception:
-        # don't fail; continue to other heuristics
         pass
 
     # 2) Iterate all interfaces and collect candidates while preferring LAN-like names
@@ -160,20 +158,16 @@ def auto_select_iface_and_network():
                 continue
             if is_ignored_ip(ip):
                 continue
-            # skip obvious non-routable addresses
             if ip.startswith("127.") or ip.startswith("169.254."):
                 continue
             try:
                 network = ipaddress.IPv4Network(f"{ip}/{netmask}", strict=False)
             except Exception:
                 continue
-            # If iface name looks like wifi/eth, return immediately
             if any(iface.lower().startswith(pref) for pref in prefer_name_prefixes):
                 return iface, ip, netmask, str(network)
-            # else collect as candidate
             candidates.append((iface, ip, netmask, str(network)))
 
-    # 3) Fallback: return first candidate if any
     if candidates:
         return candidates[0]
 
@@ -191,13 +185,12 @@ def list_interfaces():
             entry = addrs[netifaces.AF_INET][0]
             ip = entry.get("addr")
             netmask = entry.get("netmask")
-        # Try to find matching scapy iface name
         possible_scapy = [s for s in scapy_ifaces if iface.lower() in s.lower() or s.lower() in iface.lower()]
         scapy_match = possible_scapy[0] if possible_scapy else None
         infos.append({"netifaces_name": iface, "scapy_name": scapy_match, "ip": ip, "netmask": netmask})
     return infos
 
-# ---------- Scans ----------
+# ---------- Scapy iface binding helper ----------
 def _attempt_bind_iface(iface_name):
     """
     Attempt to set scapy conf.iface to a matching scapy interface name.
@@ -206,7 +199,6 @@ def _attempt_bind_iface(iface_name):
     if not iface_name:
         return None
     scapy_list = get_if_list()
-    # If iface_name already looks like a scapy iface, set it directly if present
     for s in scapy_list:
         if s == iface_name:
             try:
@@ -214,7 +206,6 @@ def _attempt_bind_iface(iface_name):
                 return s
             except Exception:
                 pass
-    # Heuristic: find a scapy iface that contains or is contained by iface_name
     for s in scapy_list:
         if iface_name.lower() in s.lower() or s.lower() in iface_name.lower():
             try:
@@ -222,28 +213,25 @@ def _attempt_bind_iface(iface_name):
                 return s
             except Exception:
                 pass
-    # last resort: try to set conf.iface to the netifaces GUID name (windows sometimes requires it)
     try:
         conf.iface = iface_name
         return iface_name
     except Exception:
         return None
 
+# ---------- ARP scan ----------
 def arp_scan(network_cidr, iface=None, timeout=2):
     """Perform ARP scan, return dict ip->mac (mac normalized)."""
     print(f"[*] Attempting ARP scan on {network_cidr} (iface={iface}) ...")
     packet = Ether(dst="ff:ff:ff:ff:ff:ff") / ARP(pdst=str(network_cidr))
     kwargs = {"timeout": timeout, "verbose": False}
-    # conf.iface may be needed for windows; try to set it but catch errors
     actual_iface = None
-    # Attempt to set conf.iface for scapy when iface provided
     if iface:
         try:
             actual_iface = _attempt_bind_iface(iface)
             if actual_iface:
                 kwargs["iface"] = actual_iface
         except Exception:
-            # don't fail; let srp try default
             pass
     try:
         answered = srp(packet, **kwargs)[0]
@@ -256,14 +244,101 @@ def arp_scan(network_cidr, iface=None, timeout=2):
         result[ip] = mac
     return result
 
+# ---------- TCP connect fallback (no root required) ----------
+def tcp_connect_check(ip, ports=(80, 443, 8080, 8008, 554, 22, 5353), timeout=0.4):
+    """
+    Try TCP connect to a list of common ports. Return True if any port connects.
+    Uses connect_ex with a short timeout; this works without raw sockets / root.
+    """
+    for port in ports:
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(max(0.05, timeout))
+            ret = s.connect_ex((ip, port))
+            s.close()
+            if ret == 0:
+                return True
+        except Exception:
+            pass
+    return False
+
+# ---------- UDP probes (SSDP m-search & simple mDNS query) ----------
+def udp_ssdp_probe(ip, timeout=0.6):
+    """
+    Send an SSDP M-SEARCH to the target IP:1900 and wait for UDP replies.
+    Returns True if any response received.
+    """
+    msg = "\r\n".join([
+        'M-SEARCH * HTTP/1.1',
+        'HOST:239.255.255.250:1900',
+        'MAN:"ssdp:discover"',
+        'MX:1',
+        'ST:ssdp:all',
+        '', ''
+    ]).encode('utf-8')
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.settimeout(timeout)
+        # send to target directly
+        s.sendto(msg, (ip, 1900))
+        try:
+            data, addr = s.recvfrom(2048)
+            s.close()
+            if data:
+                return True
+        except socket.timeout:
+            s.close()
+            return False
+    except Exception:
+        return False
+
+def udp_mdns_probe(ip, timeout=0.6):
+    """
+    Send a very small UDP packet to 5353 asking for any response.
+    Some devices reply to mDNS queries or to a simple datagram.
+    This is a best-effort; not a fully formatted DNS-SD query.
+    """
+    # A proper mDNS query would require building DNS query bytes.
+    # Many devices respond to an empty payload probe or to a simple query string.
+    probe_payload = b'\x00' * 12  # minimal payload; best-effort
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.settimeout(timeout)
+        s.sendto(probe_payload, (ip, 5353))
+        try:
+            data, addr = s.recvfrom(2048)
+            s.close()
+            if data:
+                return True
+        except socket.timeout:
+            s.close()
+            return False
+    except Exception:
+        return False
+
+def udp_probe(ip, timeout=0.6):
+    """Try SSDP then mDNS; return True if any UDP probe gets a reply."""
+    try:
+        if udp_ssdp_probe(ip, timeout=timeout):
+            return True
+    except Exception:
+        pass
+    try:
+        if udp_mdns_probe(ip, timeout=timeout):
+            return True
+    except Exception:
+        pass
+    return False
+
+# ---------- Ping (ICMP) ----------
 def ping_host(ip, timeout=1):
-    """Ping a single host; returns True if ping responds. cross-platform wrapper."""
+    """Ping a single host; returns True if ping responds. Cross-platform wrapper."""
     param = "-n" if platform.system().lower() == "windows" else "-c"
-    # On Windows -w uses ms, on Linux -W uses seconds; use best-effort
     if platform.system().lower() == "windows":
         cmd = ["ping", param, "1", "-w", str(int(timeout*1000)), ip]
     else:
-        cmd = ["ping", param, "1", "-W", str(max(1, int(timeout)) ), ip]
+        # Use -W with int seconds on Linux; on macOS -W semantics differ but this is best-effort.
+        cmd = ["ping", param, "1", "-W", str(max(1, int(timeout))), ip]
     import subprocess
     try:
         res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -271,18 +346,50 @@ def ping_host(ip, timeout=1):
     except Exception:
         return False
 
-def ping_sweep(network_cidr, max_workers=200, timeout=0.5):
-    """Ping all hosts in network concurrently; return list of ips that replied."""
-    print(f"[*] Running ICMP ping sweep on {network_cidr} ...")
+# ---------- Enhanced host discovery (ICMP -> TCP -> UDP fallback) ----------
+def ping_sweep(network_cidr, max_workers=200, timeout=0.5, tcp_ports=None, udp_probe_enabled=True):
+    """
+    Host discovery:
+      1) ICMP ping
+      2) TCP connect to common ports (fast, non-root)
+      3) UDP probes (SSDP/mDNS) if enabled (may require router to allow)
+    Returns list of ips that appear alive.
+    """
+    print(f"[*] Running enhanced host discovery on {network_cidr} ...")
+    if tcp_ports is None:
+        tcp_ports = (80, 443, 8080, 8008, 554, 22, 5353)
+
     alive = []
     net = ipaddress.IPv4Network(network_cidr, strict=False)
+    ips = [str(ip) for ip in net.hosts()]
+
+    def check(ip):
+        try:
+            if ping_host(ip, timeout=timeout):
+                return ip
+        except Exception:
+            pass
+        try:
+            if tcp_connect_check(ip, ports=tcp_ports, timeout=timeout):
+                return ip
+        except Exception:
+            pass
+        if udp_probe_enabled:
+            try:
+                if udp_probe(ip, timeout=timeout):
+                    return ip
+            except Exception:
+                pass
+        return None
+
     with ThreadPoolExecutor(max_workers=max_workers) as exe:
-        futures = {exe.submit(ping_host, str(ip), timeout): str(ip) for ip in net.hosts()}
+        futures = {exe.submit(check, ip): ip for ip in ips}
         for fut in as_completed(futures):
             ip = futures[fut]
             try:
-                if fut.result():
-                    alive.append(ip)
+                res = fut.result()
+                if res:
+                    alive.append(res)
             except Exception:
                 pass
     return alive
@@ -323,7 +430,6 @@ def print_results(mac_map):
             mobile = "YES" if any(k in vendor.lower() for k in ["apple", "samsung", "xiaomi", "huawei", "oneplus", "pixel", "realme", "vivo"]) else ""
             print("{:<22} {:<20} {:<30} {:<8}".format(ips, mac, vendor, mobile))
         else:
-            # ping-only
             print("{:<22} {:<20} {:<30} {:<8}".format(ips, "-", "Unknown (ping-only)", ""))
 
 def results_to_json(mac_map):
@@ -355,25 +461,25 @@ def check_privileges():
     except Exception:
         is_admin = False
     if not is_admin:
-        msg = "[!] Warning: not running as Administrator/root. ARP & low-level scanning may fail or return incomplete results."
+        msg = "[!] Warning: not running as Administrator/root. ARP & low-level scanning may fail or be incomplete."
     else:
         msg = "[*] Running with elevated privileges."
     return is_admin, msg
 
 # ---------- Main ----------
 def main():
-    p = argparse.ArgumentParser(description="Safe network scanner with robust vendor lookup")
+    p = argparse.ArgumentParser(description="Safe network scanner with robust vendor lookup and TCP/UDP fallbacks")
     p.add_argument("--auto", action="store_true", help="auto-select interface (default behavior)")
     p.add_argument("--network", type=str, help="explicit network CIDR (overrides auto-detect)")
     p.add_argument("--update-vendors", action="store_true", help="update local mac-vendor DB before scanning (requires internet)")
     p.add_argument("--no-arp", action="store_true", help="skip ARP scan (ping-only)")
-    # NEW: manual iface override and json output, and listing
     p.add_argument("--iface", type=str, help="force interface name (netifaces name or scapy name)")
     p.add_argument("--json", action="store_true", help="output results in JSON format")
     p.add_argument("--list-ifaces", action="store_true", help="list detected interfaces (netifaces names + scapy matches) and exit")
+    p.add_argument("--udp-probes", action="store_true", help="enable UDP SSDP/mDNS probes (may require privileges and network support)")
+    p.add_argument("--tcp-ports", type=str, help="comma-separated TCP ports for fallback (e.g. 80,443,22)")
     args = p.parse_args()
 
-    # Privilege check — warn but do not exit
     is_elevated, msg = check_privileges()
     print(msg)
 
@@ -388,7 +494,6 @@ def main():
             except Exception as e:
                 print("[!] update_vendors failed:", e)
 
-    # If user asked to list interfaces, show and exit
     if args.list_ifaces:
         infos = list_interfaces()
         print("\nDetected interfaces (netifaces name -> scapy match) and IPs:\n")
@@ -398,9 +503,7 @@ def main():
             ))
         return
 
-    # determine network
     iface = None; ip = None; netmask = None; network_cidr = None
-    # If user passed explicit iface, we respect it (manual override)
     if args.iface:
         iface = args.iface
 
@@ -408,7 +511,6 @@ def main():
         network_cidr = args.network
         print(f"Using explicit network: {network_cidr}")
     else:
-        # default: auto-detect (explicit --auto is equivalent)
         iface, ip, netmask, network_cidr = auto_select_iface_and_network()
         if not network_cidr:
             print("[!] Could not detect active interface/network. Provide --network explicitly.")
@@ -416,30 +518,37 @@ def main():
         print(f"Interface chosen: {iface}  IP: {ip}  Netmask: {netmask}")
         print(f"Detected network: {network_cidr}")
 
+    tcp_ports = None
+    if args.tcp_ports:
+        try:
+            tcp_ports = tuple(int(p.strip()) for p in args.tcp_ports.split(",") if p.strip())
+        except Exception:
+            tcp_ports = None
+
     arp_map = {}
     ping_list = []
 
-    # ARP scan (if not disabled)
     if not args.no_arp:
         try:
+            # attempt to bind scapy to interface if provided - improves ARP reliability on Windows
+            if iface:
+                _attempt_bind_iface(iface)
             arp_map = arp_scan(network_cidr, iface=iface, timeout=2)
             if not arp_map:
-                print("[!] ARP scan returned no results (will run ping sweep).")
+                print("[!] ARP scan returned no results (will run enhanced host discovery).")
         except Exception as e:
             print("[!] ARP scan error:", e)
     else:
         print("[*] ARP scan skipped (ping-only mode).")
 
-    # Always run ping sweep to catch devices not responding to ARP
     try:
-        ping_list = ping_sweep(network_cidr)
+        ping_list = ping_sweep(network_cidr, tcp_ports=tcp_ports, udp_probe_enabled=args.udp_probes)
     except Exception as e:
-        print("[!] Ping sweep error:", e)
+        print("[!] Host discovery error:", e)
         ping_list = []
 
     mac_map = merge_and_dedupe(arp_map, ping_list)
 
-    # Output results: JSON or pretty
     if args.json:
         out = results_to_json(mac_map)
         print(json.dumps(out, indent=2))

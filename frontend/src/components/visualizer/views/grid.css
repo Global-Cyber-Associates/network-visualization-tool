@@ -1,0 +1,81 @@
+/* Container styles for the SVG canvas */
+.grid-layout-svg {
+  width: 100%;
+  height: 100%;
+  background-color: #0b1e2d;
+  border-radius: 12px;
+}
+
+/* Node labels */
+.grid-node-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 0.75rem;
+  color: #fff;
+  text-align: center;
+  pointer-events: none; /* Prevent interfering with dragging */
+}
+
+/* Node status colors */
+.grid-node-status.online {
+  color: #00ff90;
+  font-weight: 600;
+}
+
+.grid-node-status.no-agent {
+  color: #ff5f6d;
+  font-weight: 600;
+}
+
+/* Node circle styling */
+.grid-node-circle {
+  stroke: #222;
+  stroke-width: 1.5px;
+  transition: transform 0.2s ease, fill 0.2s ease;
+}
+
+/* Hover effect for nodes */
+.grid-node-circle:hover {
+  transform: scale(1.15);
+  stroke-width: 2px;
+  cursor: grab;
+}
+
+/* Dragging effect */
+.grid-node-circle.dragging {
+  stroke: #fff;
+  stroke-width: 2.5px;
+  cursor: grabbing;
+}
+
+/* Wire/Link styles */
+.grid-wire-path {
+  stroke: url(#link-gradient);
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke 0.2s ease;
+}
+
+/* Optional: animate link colors */
+.grid-wire-path.alive {
+  stroke-dasharray: 5, 5;
+  animation: dashAnim 2s linear infinite;
+}
+
+@keyframes dashAnim {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: 10;
+  }
+}
+
+/* Editable drag overlay (optional visual) */
+.drag-overlay {
+  fill: rgba(255, 255, 255, 0.05);
+  pointer-events: none;
+}
