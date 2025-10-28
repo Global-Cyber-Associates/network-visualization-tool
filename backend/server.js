@@ -17,6 +17,7 @@ import usbRoutes from "./api/usb.js";
 import tasksRoutes from "./api/tasks.js";
 import visualizerDataRoute from "./api/visualizerData.js";
 import visualizerTrigger from "./api/visualizerTrigger.js";
+import installedAppsRoutes from "./api/installedAppsRoutes.js";
 
 // Import models
 import User from "./models/User.js";
@@ -82,6 +83,7 @@ app.use("/api", tasksRoutes);
 app.use("/api/usb", usbRoutes);
 app.use("/api/visualizer-data", visualizerDataRoute);
 app.use("/api/visualizerTrigger", visualizerTrigger);
+app.use("/api/installed-apps", installedAppsRoutes);
 
 /* ----------------------- CONFIGURATION ENDPOINTS ----------------------- */
 
