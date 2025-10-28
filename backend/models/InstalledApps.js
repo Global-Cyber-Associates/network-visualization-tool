@@ -1,14 +1,21 @@
 import mongoose from "mongoose";
 
-const InstalledAppsSchema = new mongoose.Schema({
-  deviceId: { type: String, required: true },
+const InstalledAppSchema = new mongoose.Schema({
+  deviceId: {
+    type: String,
+    required: true,
+  },
   applications: [
     {
-      name: { type: String, required: true },
-      version: { type: String },
-      publisher: { type: String }
-    }
+      name: String,
+      version: String,
+      publisher: String,
+    },
   ],
-}, { timestamps: true });
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
 
-export default mongoose.model("InstalledApp", InstalledAppsSchema);
+export default mongoose.model("InstalledApp", InstalledAppSchema);

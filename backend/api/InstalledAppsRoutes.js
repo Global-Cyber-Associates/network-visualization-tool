@@ -5,25 +5,28 @@ const router = express.Router();
 
 router.post("/", async (req, res) => {
   try {
-    const data = req.body.results || req.body; // ✅ support both formats
+    const data = req.body.results || req.body;
     const { deviceId, applications } = data;
 
     if (!deviceId || !applications) {
       return res.status(400).json({ message: "Missing deviceId or applications" });
     }
 
-    const newRecord = new InstalledApp({
+    console.log("[DB] Saving installed apps for device:", deviceId);
+    console.log("Total apps:", applications.length);
+
+    const record = new InstalledApp({
       deviceId,
-      applications
+      applications,
     });
 
-    await newRecord.save();
+    await record.save();
+
     res.status(201).json({ message: "Installed apps saved successfully" });
   } catch (error) {
     console.error("[InstalledApps POST Error]", error);
     res.status(500).json({ message: "Internal Server Error", error: error.message });
   }
 });
-
 
 export default router;
