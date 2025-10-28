@@ -2,65 +2,90 @@ import mongoose from "mongoose";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import ScanResult from "../models/ScanResult.js";
+import ScanResult from "../models/VisualizerScanner.js";
 import SystemInfo from "../models/system.js";
 import VisualizerData from "../models/VisualizerData.js";
 
-// 🔧 Resolve __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// 🔧 Absolute path to config.json in project root
 const configPath = path.resolve(__dirname, "../config.json");
 const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
 const MONGO_URI = config.mongoURI;
 
-// Connect to MongoDB
-mongoose.connect(MONGO_URI)
-  .then(() => main())
-  .catch((err) => console.error("MongoDB connection error:", err));
+let connected = false;
+async function connectDB() {
+  if (!connected) {
+    await mongoose.connect(MONGO_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    connected = true;
+    console.log("✅ MongoDB connected for visualizer auto-sync");
+  }
+}
 
-async function main() {
+export async function runVisualizerUpdate() {
   try {
-    console.log("[*] Fetching ScanResult and SystemInfo...");
+    await connectDB();
 
-    // Latest scan result
-    const latestScan = await ScanResult.findOne().sort({ createdAt: -1 });
-    const scanDevices = latestScan?.devices || [];
+    // Fetch all scan entries (latest first)
+    const allScans = await ScanResult.find({}).sort({ createdAt: -1 });
+    if (!allScans.length) {
+      console.log("⚠️ No scan results found.");
+      return;
+    }
 
-    // All system infos
+    // Fetch all system info documents
     const systems = await SystemInfo.find();
 
-    // Flatten system IPs from wlan_ip arrays
+    // Build a mapping of IP -> hostname from system info
+    const ipToHostname = new Map();
     const systemIPs = new Set();
-    systems.forEach(sys => {
-      (sys.wlan_ip || []).forEach(ipObj => {
+
+    systems.forEach((sys) => {
+      (sys.wlan_ip || []).forEach((ipObj) => {
         const ip = (ipObj.address || "").trim();
-        if (ip) systemIPs.add(ip);
+        if (ip) {
+          systemIPs.add(ip);
+          ipToHostname.set(ip, sys.hostname || "Unknown");
+        }
       });
     });
 
-    // Map scan devices and mark noAgent correctly
-    const finalDevices = scanDevices.map(dev => {
+    // Build final visualizer data
+    const finalDevices = allScans.map((dev) => {
       const ip = (dev.ips?.[0] || "N/A").trim();
+      const hasAgent = systemIPs.has(ip);
+      const hostname = hasAgent ? ipToHostname.get(ip) || "Unknown" : "Unknown";
+
       return {
         ip,
         mac: dev.mac || "Unknown",
-        vendor: dev.vendor || "Unknown",
-        noAgent: ip === "N/A" ? true : !systemIPs.has(ip)
+        hostname, // 👈 Used by frontend for display
+        ping_only: !!dev.ping_only,
+        noAgent: ip === "N/A" ? true : !hasAgent,
       };
     });
 
-    // Save to VisualizerData collection
+    // Replace all existing visualizer data
     await VisualizerData.deleteMany({});
     await VisualizerData.insertMany(finalDevices);
 
-    console.log("[*] Visualizer data refreshed. JSON output:");
-    console.log(JSON.stringify(finalDevices, null, 2));
-
-    process.exit(0);
+    console.log(
+      `[${new Date().toLocaleTimeString()}] ✅ Visualizer updated (${finalDevices.length} devices)`
+    );
   } catch (err) {
-    console.error(err);
-    process.exit(1);
+    console.error(
+      `[${new Date().toLocaleTimeString()}] ❌ Visualizer update failed:`,
+      err.message
+    );
+  }
+}
+
+// Continuous background sync loop
+export async function startContinuousSync() {
+  while (true) {
+    await runVisualizerUpdate();
+    await new Promise((resolve) => setTimeout(resolve, 3000)); // Run every 3 seconds
   }
 }

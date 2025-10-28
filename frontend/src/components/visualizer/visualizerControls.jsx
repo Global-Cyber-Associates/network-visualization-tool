@@ -9,10 +9,6 @@ export default function VisualizerControls({
 }) {
   return (
     <div className="visualizer-controls">
-      <button className="run-btn" onClick={handleRunVisualizer} disabled={loading}>
-        {loading ? "Running..." : "Run Visualizer"}
-      </button>
-
       <button className="desc-toggle-btn" onClick={() => setShowDesc((p) => !p)}>
         {showDesc ? "Hide Descriptions" : "Show Descriptions"}
       </button>

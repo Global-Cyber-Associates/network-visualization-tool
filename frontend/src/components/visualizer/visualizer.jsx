@@ -10,10 +10,6 @@ export default function Visualizer() {
   const [positions, setPositions] = useState({});
   const [size, setSize] = useState({ width: 800, height: 400 });
   const [showDesc, setShowDesc] = useState(true);
-  const [draggedNode, setDraggedNode] = useState(null);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
 
   // 💾 Restore saved positions
   useEffect(() => {
@@ -21,7 +17,7 @@ export default function Visualizer() {
     if (saved) setPositions(JSON.parse(saved));
   }, []);
 
-  // 🔄 Fetch devices from API
+  // 🔄 Fetch devices from backend
   const fetchDevices = async () => {
     try {
       const res = await fetch("http://localhost:5000/api/visualizer-data");
@@ -30,75 +26,101 @@ export default function Visualizer() {
 
       const routerIp = data.find((dev) => dev.ip && dev.ip.endsWith(".1"))?.ip;
 
-      const mapped = data.map((dev, i) => {
-        const ip = dev.ip || "N/A";
-        const isRouter = ip === routerIp;
-        const vendorName =
-          dev.vendor === "Unknown" ? dev.mac || "Unknown Device" : dev.vendor.split(" ")[0];
+      setDevices((prevDevices) => {
+        const newDevicesMap = {};
 
-        return {
-          id: i,
-          name: isRouter ? "Router" : vendorName,
-          ip,
-          status: dev.noAgent ? "No Agent" : "Working",
-          noAgent: dev.noAgent,
-          icon: isRouter ? "🛜" : "💻",
-          type: isRouter ? "router" : "device",
-        };
+        data.forEach((dev) => {
+          const ip = dev.ip || "N/A";
+          const isRouter = ip === routerIp;
+          const displayName =
+            dev.hostname && dev.hostname !== "Unknown"
+              ? dev.hostname
+              : "Unknown Device";
+
+          newDevicesMap[ip] = {
+            ip,
+            name: isRouter ? "Router" : displayName,
+            status: dev.noAgent ? "No Agent" : "Working",
+            noAgent: dev.noAgent,
+            icon: isRouter ? "🛜" : "💻",
+            type: isRouter ? "router" : "device",
+          };
+        });
+
+        // 🧩 Merge updates
+        const updatedDevices = prevDevices.map((d) => {
+          const newData = newDevicesMap[d.ip];
+          return newData ? { ...d, ...newData } : d;
+        });
+
+        // ➕ Add new devices
+        const existingIps = new Set(prevDevices.map((d) => d.ip));
+        Object.values(newDevicesMap).forEach((dev) => {
+          if (!existingIps.has(dev.ip))
+            updatedDevices.push({ ...dev, id: updatedDevices.length });
+        });
+
+        // 🛜 Ensure one router
+        if (
+          !updatedDevices.some((d) => d.type === "router") &&
+          updatedDevices.length > 0
+        ) {
+          updatedDevices[0].type = "router";
+          updatedDevices[0].name = "Router";
+          updatedDevices[0].icon = "🛜";
+        }
+
+        return updatedDevices;
       });
-
-      if (!mapped.some((d) => d.type === "router") && mapped.length > 0) {
-        mapped[0].type = "router";
-        mapped[0].name = "Router";
-        mapped[0].icon = "🛜";
-      }
-
-      setDevices(mapped);
     } catch (err) {
-      console.error("Failed to fetch visualizer data:", err);
+      console.error("❌ Failed to fetch visualizer data:", err);
     }
   };
 
+  // 🔁 Auto-refresh every 1 second
   useEffect(() => {
     fetchDevices();
+    const interval = setInterval(fetchDevices, 1000);
+    return () => clearInterval(interval);
   }, []);
 
-  // 🔗 Generate links
+  // 🔗 Create links (router → devices)
   useEffect(() => {
     const makeLinks = (devices) => {
       const router = devices.find((d) => d.type === "router");
       if (!router) return [];
-      return devices.filter((d) => d.id !== router.id).map((d) => ({ from: router.id, to: d.id }));
+      return devices
+        .filter((d) => d.id !== router.id)
+        .map((d) => ({ from: router.id, to: d.id }));
     };
+
     if (devices.length > 0) setLinks(makeLinks(devices));
   }, [devices]);
 
-  // 🌀 Compute circular layout with header offset
+  // 🌀 Compute circular layout
   useEffect(() => {
     if (!devices || devices.length === 0) return;
 
     const computePositions = () => {
       const el = containerRef.current;
       if (!el) return;
-      const rect = el.getBoundingClientRect();
 
+      const rect = el.getBoundingClientRect();
       const headerEl = document.querySelector(".visualizer-header");
       const headerHeight = headerEl ? headerEl.offsetHeight : 0;
 
       const W = Math.max(600, rect.width);
       const H = Math.max(400, rect.height);
-
       setSize({ width: W, height: H });
 
       const cx = W / 2;
       const cy = (H - headerHeight) / 2 + headerHeight;
-
       const radius = Math.min(W, H - headerHeight) * 0.35;
 
       const router = devices.find((d) => d.type === "router") || devices[0];
       const others = devices.filter((d) => d.id !== router.id);
-
       const newPos = { ...positions };
+
       if (!newPos[router.id]) newPos[router.id] = { x: cx, y: cy };
 
       others.forEach((dev, i) => {
@@ -126,74 +148,13 @@ export default function Visualizer() {
     }
   }, [positions]);
 
-  // 🖱️ Dragging
-  const handleMouseDown = (id, e) => {
-    e.stopPropagation();
-    const svg = e.target.ownerSVGElement;
-    const pt = svg.createSVGPoint();
-    pt.x = e.clientX;
-    pt.y = e.clientY;
-    const cursor = pt.matrixTransform(svg.getScreenCTM().inverse());
-    const pos = positions[id];
-    setDraggedNode(id);
-    setOffset({ x: pos.x - cursor.x, y: pos.y - cursor.y });
-  };
-
-  const handleMouseMove = (e) => {
-    if (!draggedNode) return;
-    const svg = e.target.ownerSVGElement || e.target;
-    const pt = svg.createSVGPoint();
-    pt.x = e.clientX;
-    pt.y = e.clientY;
-    const cursor = pt.matrixTransform(svg.getScreenCTM().inverse());
-    setPositions((prev) => ({
-      ...prev,
-      [draggedNode]: { x: cursor.x + offset.x, y: cursor.y + offset.y },
-    }));
-  };
-
-  const handleMouseUp = () => setDraggedNode(null);
-
-  // ✅ Run Visualizer button
-  const handleRunVisualizer = async () => {
-    setLoading(true);
-    setMessage("Running visualizer...");
-    try {
-      const res = await fetch("http://localhost:5000/api/visualizerTrigger/run-visualizer", {
-        method: "POST",
-      });
-      const data = await res.json();
-      if (data.success) {
-        setMessage("Visualizer updated successfully!");
-        await fetchDevices();
-      } else {
-        setMessage("Failed to run visualizer.");
-        console.error(data.error);
-      }
-    } catch (err) {
-      console.error(err);
-      setMessage("Error running visualizer.");
-    } finally {
-      setLoading(false);
-      setTimeout(() => setMessage(""), 4000);
-    }
-  };
-
   return (
     <div className="visualizer-page">
       <Sidebar />
       <div className="visualizer-wrap" ref={containerRef}>
         <div className="visualizer-header">
           <h1>Network Visualizer</h1>
-
-          {/* ⬇ Split buttons into separate component */}
-          <VisualizerControls
-            loading={loading}
-            message={message}
-            showDesc={showDesc}
-            setShowDesc={setShowDesc}
-            handleRunVisualizer={handleRunVisualizer}
-          />
+          <VisualizerControls showDesc={showDesc} setShowDesc={setShowDesc} />
         </div>
 
         <div className="visualizer-canvas">
@@ -202,23 +163,21 @@ export default function Visualizer() {
             width="100%"
             height="100%"
             viewBox={`0 0 ${size.width} ${size.height}`}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
           >
             <defs>
               <linearGradient id="link-gradient" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#3db2ff" />
-                <stop offset="100%" stopColor="#00bfff" />
+                <stop offset="0%" stopColor="#3f5e96ff" />
+                <stop offset="100%" stopColor="#000000ff" />
               </linearGradient>
 
               <radialGradient id="router-gradient" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="#110eccff" />
-                <stop offset="100%" stopColor="#d17a16ff" />
+                <stop offset="0%" stopColor="#ffc504ff" />
+                <stop offset="100%" stopColor="#000000ff" />
               </radialGradient>
 
               <radialGradient id="noagent-gradient" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="#ff5f6d" />
-                <stop offset="100%" stopColor="#df0b0bff" />
+                <stop offset="0%" stopColor="#f50014ff" />
+                <stop offset="100%" stopColor="#201212ff" />
               </radialGradient>
             </defs>
 
@@ -226,8 +185,10 @@ export default function Visualizer() {
               const a = positions[link.from];
               const b = positions[link.to];
               if (!a || !b) return null;
+
               const mx = (a.x + b.x) / 2;
               const my = (a.y + b.y) / 2 - 40;
+
               return (
                 <path
                   key={idx}
@@ -244,26 +205,26 @@ export default function Visualizer() {
               const pos = positions[d.id];
               if (!pos) return null;
 
-              let fill = "#00bfff";
+              let fill = "#6ebbceff";
               if (d.type === "router") fill = "url(#router-gradient)";
               else if (d.noAgent) fill = "url(#noagent-gradient)";
 
               const radius = d.type === "router" ? 30 : 20;
 
               return (
-                <g
-                  key={d.id}
-                  transform={`translate(${pos.x}, ${pos.y})`}
-                  onMouseDown={(e) => handleMouseDown(d.id, e)}
-                  style={{ cursor: "grab" }}
-                >
-                  <circle r={radius} fill={fill} stroke="#222" strokeWidth="1.5" />
+                <g key={d.id} transform={`translate(${pos.x}, ${pos.y})`}>
+                  <circle
+                    r={radius}
+                    fill={fill}
+                    stroke="#222"
+                    strokeWidth="1.5"
+                  />
                   <text
                     x="0"
                     y="6"
                     textAnchor="middle"
                     fontSize="18"
-                    fill="#fff"
+                    fill="#ff2929ff"
                     fontWeight={700}
                     pointerEvents="none"
                   >
@@ -271,11 +232,21 @@ export default function Visualizer() {
                   </text>
 
                   {showDesc && (
-                    <foreignObject x={-100} y={radius + 8} width={200} height={80} pointerEvents="none">
+                    <foreignObject
+                      x={-100}
+                      y={radius + 8}
+                      width={200}
+                      height={80}
+                      pointerEvents="none"
+                    >
                       <div className="node-label">
                         <div className="node-name">{d.name}</div>
                         <div className="node-ip">{d.ip}</div>
-                        <div className={`node-status ${d.noAgent ? "no-agent" : "online"}`}>
+                        <div
+                          className={`node-status ${
+                            d.noAgent ? "no-agent" : "online"
+                          }`}
+                        >
                           {d.status}
                         </div>
                       </div>
