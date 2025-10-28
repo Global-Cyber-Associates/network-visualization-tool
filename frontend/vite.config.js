@@ -28,5 +28,8 @@ export default defineConfig({
         additionalData: `@import "@/styles/variables.scss";`, // if using scss variables
       },
     },
+    define: {
+    global: 'window',
+  },
   },
 });

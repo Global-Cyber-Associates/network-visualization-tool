@@ -1,136 +1,81 @@
-/* ---------- Layout ---------- */
 .features-layout {
   display: flex;
-  background: linear-gradient(135deg, #0b1e2d 0%, #162c3e 100%);
+  background-color: #0b1e2d;
+  color: #f5f5f5;
   min-height: 100vh;
-  color: #dfe7f1;
+  font-family: "Inter", sans-serif;
 }
 
-/* ---------- Content ---------- */
 .features-content {
   flex: 1;
-  padding: 2rem;
-  background: linear-gradient(180deg, #1e2e45 0%, #1b263b 100%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  padding: 40px;
 }
 
-/* ---------- Header ---------- */
 .features-title {
-  font-size: 2.3rem;
-  color: #ffffff;
-  text-align: center;
-  margin-bottom: 0.3rem;
-  font-weight: 700;
-  letter-spacing: 0.5px;
+  font-size: 28px;
+  font-weight: 600;
+  color: #a8dadc;
+  margin-bottom: 10px;
 }
 
 .features-subtitle {
-  font-size: 1rem;
-  color: #b5d0e0;
-  text-align: center;
-  margin-bottom: 2.5rem;
-  opacity: 0.9;
+  font-size: 15px;
+  color: #8ca8b3;
+  margin-bottom: 35px;
 }
 
-/* ---------- Grid ---------- */
 .features-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 1.5rem;
-  width: 100%;
-  max-width: 1100px;
+  gap: 25px;
 }
 
-/* ---------- Card ---------- */
 .feature-card {
-  background: rgba(255, 255, 255, 0.08);  /* soft light card */
-  backdrop-filter: blur(10px);
-  border-radius: 16px;
-  padding: 1.8rem;
-  text-align: center;
-  transition: all 0.3s ease;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  background: #132639;
+  border-radius: 14px;
+  padding: 25px;
+  text-align: left;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+  border: 1px solid #1e3b52;
+  transition: all 0.25s ease;
 }
 
 .feature-card:hover {
-  transform: translateY(-6px) scale(1.02);
-  box-shadow: 0 10px 20px rgba(255, 255, 255, 0.15);
-  background: rgba(255, 255, 255, 0.12);
+  transform: translateY(-4px);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.35);
+  border-color: #457b9d;
 }
 
-/* ---------- Icon ---------- */
 .feature-icon {
-  background: rgba(10, 66, 90, 0.15);
-  color: #ffffff;
-  padding: 14px;
-  border-radius: 50%;
-  margin-bottom: 1rem;
-  font-size: 1.3rem;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  border: 2px solid white;
+  color: #00b4d8;
+  margin-bottom: 12px;
 }
 
-/* ---------- Text ---------- */
 .feature-card h2 {
-  color: #ffffff;
-  font-size: 1.2rem;
+  color: #f1faee;
+  font-size: 18px;
+  margin-bottom: 8px;
   font-weight: 600;
-  margin-bottom: 0.6rem;
 }
 
 .feature-card p {
-  font-size: 0.92rem;
-  color: #c8d3df;
-  margin-bottom: 1.3rem;
-  line-height: 1.4rem;
+  color: #b0bec5;
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 15px;
 }
 
-/* ---------- Button ---------- */
 .buy-btn {
-    background-color: green;
+  background: #0077b6;
+  color: #fff;
   border: none;
-  color: #ffffff;
-  padding: 0.65rem 1.4rem;
-  border-radius: 10px;
-  font-size: 0.95rem;
-  font-weight: 600;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: background 0.3s ease;
 }
 
 .buy-btn:hover {
-  background: rgb(9, 122, 14);
-  transform: translateY(-3px);
-  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
-}
-
-/* ---------- Responsive ---------- */
-@media (max-width: 768px) {
-  .features-content {
-    padding: 1rem;
-  }
-
-  .features-title {
-    font-size: 1.8rem;
-  }
-
-  .features-subtitle {
-    font-size: 0.95rem;
-  }
-
-  .feature-card {
-    padding: 1.3rem;
-  }
-
-  .buy-btn {
-    font-size: 0.85rem;
-  }
+  background: #0096c7;
 }
