@@ -65,7 +65,7 @@
 /* Nodes */
 .node-circle {
   cursor: pointer;
-  stroke: #fff;
+  stroke: #702828;
   stroke-width: 2;
   filter: drop-shadow(0 0 6px rgba(0,191,255,0.6));
   animation: floatNode 6s ease-in-out infinite, nodePulse 2s ease-in-out infinite alternate;
@@ -144,7 +144,7 @@
 
 .desc-toggle-btn:hover {
   transform: scale(1.05);
-  background: #3db2ff;
+  background: #fcfcfc;
 }
 
 /* === Add this block at the very end === */
@@ -167,7 +167,7 @@
 
 /* Optional: dim network lines slightly for your glowing theme */
 .vis-network .vis-edge {
-  stroke: rgba(0, 191, 255, 0.6) !important;
+  stroke: rgba(158, 187, 197, 0.6) !important;
 }
 
 .vis-network .vis-node {
@@ -182,7 +182,7 @@
 /* Title alignment inside header */
 .visualizer-header h1 {
   font-size: 1.8rem;
-  color: #a8dadc;
+  color: #d4dedf;
 }
 
 .run-btn {

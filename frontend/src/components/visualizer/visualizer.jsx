@@ -10,8 +10,6 @@ export default function Visualizer() {
   const [positions, setPositions] = useState({});
   const [size, setSize] = useState({ width: 800, height: 400 });
   const [showDesc, setShowDesc] = useState(true);
-  const [draggedNode, setDraggedNode] = useState(null);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
 
   // 💾 Restore saved positions
   useEffect(() => {
@@ -150,37 +148,6 @@ export default function Visualizer() {
     }
   }, [positions]);
 
-  // 🖱️ Dragging logic
-  const handleMouseDown = (id, e) => {
-    e.stopPropagation();
-    const svg = e.target.ownerSVGElement;
-    const pt = svg.createSVGPoint();
-    pt.x = e.clientX;
-    pt.y = e.clientY;
-    const cursor = pt.matrixTransform(svg.getScreenCTM().inverse());
-    const pos = positions[id];
-    setDraggedNode(id);
-    setOffset({ x: pos.x - cursor.x, y: pos.y - cursor.y });
-  };
-
-  const handleMouseMove = (e) => {
-    if (!draggedNode) return;
-    const svg = e.target.ownerSVGElement || e.target;
-    const pt = svg.createSVGPoint();
-    pt.x = e.clientX;
-    pt.y = e.clientY;
-    const cursor = pt.matrixTransform(svg.getScreenCTM().inverse());
-    setPositions((prev) => ({
-      ...prev,
-      [draggedNode]: {
-        x: cursor.x + offset.x,
-        y: cursor.y + offset.y,
-      },
-    }));
-  };
-
-  const handleMouseUp = () => setDraggedNode(null);
-
   return (
     <div className="visualizer-page">
       <Sidebar />
@@ -196,28 +163,24 @@ export default function Visualizer() {
             width="100%"
             height="100%"
             viewBox={`0 0 ${size.width} ${size.height}`}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
           >
-            {/* 🎨 Gradients */}
             <defs>
               <linearGradient id="link-gradient" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#3db2ff" />
-                <stop offset="100%" stopColor="#00bfff" />
+                <stop offset="0%" stopColor="#3f5e96ff" />
+                <stop offset="100%" stopColor="#000000ff" />
               </linearGradient>
 
               <radialGradient id="router-gradient" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="#110eccff" />
-                <stop offset="100%" stopColor="#d17a16ff" />
+                <stop offset="0%" stopColor="#ffc504ff" />
+                <stop offset="100%" stopColor="#000000ff" />
               </radialGradient>
 
               <radialGradient id="noagent-gradient" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="#ff5f6d" />
-                <stop offset="100%" stopColor="#df0b0bff" />
+                <stop offset="0%" stopColor="#f50014ff" />
+                <stop offset="100%" stopColor="#201212ff" />
               </radialGradient>
             </defs>
 
-            {/* 🔗 Connections */}
             {links.map((link, idx) => {
               const a = positions[link.from];
               const b = positions[link.to];
@@ -238,24 +201,18 @@ export default function Visualizer() {
               );
             })}
 
-            {/* 💻 Devices */}
             {devices.map((d) => {
               const pos = positions[d.id];
               if (!pos) return null;
 
-              let fill = "#00bfff";
+              let fill = "#6ebbceff";
               if (d.type === "router") fill = "url(#router-gradient)";
               else if (d.noAgent) fill = "url(#noagent-gradient)";
 
               const radius = d.type === "router" ? 30 : 20;
 
               return (
-                <g
-                  key={d.id}
-                  transform={`translate(${pos.x}, ${pos.y})`}
-                  onMouseDown={(e) => handleMouseDown(d.id, e)}
-                  style={{ cursor: "grab" }}
-                >
+                <g key={d.id} transform={`translate(${pos.x}, ${pos.y})`}>
                   <circle
                     r={radius}
                     fill={fill}
@@ -267,7 +224,7 @@ export default function Visualizer() {
                     y="6"
                     textAnchor="middle"
                     fontSize="18"
-                    fill="#fff"
+                    fill="#ff2929ff"
                     fontWeight={700}
                     pointerEvents="none"
                   >
