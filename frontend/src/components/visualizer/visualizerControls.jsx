@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import React from "react";
 
 export default function VisualizerControls({
@@ -28,5 +27,3 @@ export default function VisualizerControls({
     </div>
   );
 }
-=======
->>>>>>> 7be118d587a8453d5027fabb8b677f953ea805e9
