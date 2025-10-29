@@ -77,11 +77,9 @@ export default function Visualizer() {
     }
   };
 
-  // 🔁 Auto-refresh every 1 second
+  // 🔁 Fetch once when mounted (no auto-refresh)
   useEffect(() => {
     fetchDevices();
-    const interval = setInterval(fetchDevices, 1000);
-    return () => clearInterval(interval);
   }, []);
 
   // 🔗 Create links (router → devices)
