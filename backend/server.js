@@ -21,10 +21,7 @@ import visualizerDataRoute from "./api/visualizerData.js";
 import User from "./models/User.js";
 import connectDB from "./db.js";
 
-// Import visualizer continuous sync
-import { startContinuousSync } from "./visualizer-script/visualizer.js";
-
-// ✅ Import visualizer live scanner
+// ✅ Import continuous scanner (handles scan → visualizer → repeat)
 import "./visualizer-script/visualizerScanner.js";
 
 const app = express();
@@ -52,7 +49,6 @@ app.use((req, res, next) => {
 // ----------------------- DATABASE CONNECTION -----------------------
 connectDB();
 
-// Dynamic config-based connection
 const connectToDB = async (mongoURI) => {
   try {
     await mongoose.connect(mongoURI, {
@@ -139,11 +135,9 @@ app.post("/login", async (req, res) => {
   const isValid = await bcrypt.compare(password, user.password);
   if (!isValid) return res.status(401).json({ message: "Invalid credentials" });
 
-  const token = jwt.sign(
-    { username: user.username },
-    JWT_SECRET,
-    { expiresIn: "1h" }
-  );
+  const token = jwt.sign({ username: user.username }, JWT_SECRET, {
+    expiresIn: "1h",
+  });
   res.json({ token });
 });
 
@@ -151,7 +145,5 @@ app.post("/login", async (req, res) => {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`✅ Server running at http://localhost:${PORT}`);
-
-  // Start continuous visualizer auto-sync
-  startContinuousSync(30000); // runs every 30 seconds
+  console.log("🧠 Continuous scanner + visualizer loop active");
 });

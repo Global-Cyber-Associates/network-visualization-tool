@@ -20,7 +20,7 @@ async function connectDB() {
       useUnifiedTopology: true,
     });
     connected = true;
-    console.log("✅ MongoDB connected for visualizer auto-sync");
+    console.log("✅ MongoDB connected for visualizer update");
   }
 }
 
@@ -28,17 +28,13 @@ export async function runVisualizerUpdate() {
   try {
     await connectDB();
 
-    // Fetch all scan entries (latest first)
     const allScans = await ScanResult.find({}).sort({ createdAt: -1 });
     if (!allScans.length) {
       console.log("⚠️ No scan results found.");
       return;
     }
 
-    // Fetch all system info documents
     const systems = await SystemInfo.find();
-
-    // Build a mapping of IP -> hostname from system info
     const ipToHostname = new Map();
     const systemIPs = new Set();
 
@@ -52,7 +48,6 @@ export async function runVisualizerUpdate() {
       });
     });
 
-    // Build final visualizer data
     const finalDevices = allScans.map((dev) => {
       const ip = (dev.ips?.[0] || "N/A").trim();
       const hasAgent = systemIPs.has(ip);
@@ -61,13 +56,12 @@ export async function runVisualizerUpdate() {
       return {
         ip,
         mac: dev.mac || "Unknown",
-        hostname, // 👈 Used by frontend for display
+        hostname,
         ping_only: !!dev.ping_only,
         noAgent: ip === "N/A" ? true : !hasAgent,
       };
     });
 
-    // Replace all existing visualizer data
     await VisualizerData.deleteMany({});
     await VisualizerData.insertMany(finalDevices);
 
@@ -79,13 +73,5 @@ export async function runVisualizerUpdate() {
       `[${new Date().toLocaleTimeString()}] ❌ Visualizer update failed:`,
       err.message
     );
-  }
-}
-
-// Continuous background sync loop
-export async function startContinuousSync() {
-  while (true) {
-    await runVisualizerUpdate();
-    await new Promise((resolve) => setTimeout(resolve, 3000)); // Run every 3 seconds
   }
 }
