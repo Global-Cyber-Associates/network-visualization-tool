@@ -103,7 +103,7 @@ async function startContinuousLoop() {
     console.log(`✅ Cycle completed at ${endTime.toLocaleTimeString()}`);
 
     console.log("⏳ Waiting 5 seconds before next scan...");
-    await new Promise((r) => setTimeout(r, 5000)); // adjust interval if needed
+    await new Promise((r) => setTimeout(r, 50000)); // adjust interval if needed
   }
 }
 
