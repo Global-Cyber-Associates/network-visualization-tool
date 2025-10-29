@@ -26,24 +26,18 @@ if __name__ == "__main__":
     # Extract deviceId
     device_id = system_data.get("machine_id") or system_data.get("hostname") or "unknown-device"
 
-<<<<<<< HEAD
-    #--- 3. Installed Apps Data ---
-    print("\n[*] Collecting installed applications...\n")
-    apps = get_installed_apps()
-    send_scan_results({"deviceId": device_id, "applications": apps}, endpoint_path="installed-apps")
-=======
     # --- 3. Network Scan ---
     # print("\n[*] Starting network scan...\n")
     # network_results = scan_network()
     # print("[*] Network Scan Results:\n", json.dumps(network_results, indent=2))
     # send_scan_results(network_results, endpoint_path="network-scan")
->>>>>>> 7be118d587a8453d5027fabb8b677f953ea805e9
 
     # # --- 4. Task Manager Data ---
     # print("\n[*] Collecting task manager data...\n")
     # task_data = collect_process_info()
     # applications = task_data.get("applications", [])
     # background_processes = task_data.get("background_processes", [])
+    
 
 
 
