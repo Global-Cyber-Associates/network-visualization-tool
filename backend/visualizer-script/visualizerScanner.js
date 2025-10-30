@@ -10,26 +10,26 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const scannerPath = path.join(__dirname, "scanner_service.py");
 
-// ---------------- CONFIG ----------------
-let MONGO_URI = "";
-try {
-  const configPath = path.join(__dirname, "../config.json");
-  const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
-  MONGO_URI = config.mongoURI;
-  console.log("✅ Loaded MongoDB URI from config.json");
-} catch (err) {
-  console.error("❌ Failed to load config.json:", err.message);
-  process.exit(1);
-}
+// // ---------------- CONFIG ----------------
+// let MONGO_URI = "";
+// try {
+//   const configPath = path.join(__dirname, "../config.json");
+//   const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+//   MONGO_URI = config.mongoURI;
+//   console.log("✅ Loaded MongoDB URI from config.json");
+// } catch (err) {
+//   console.error("❌ Failed to load config.json:", err.message);
+//   process.exit(1);
+// }
 
 // ---------------- MONGOOSE ----------------
-await mongoose
-  .connect(MONGO_URI)
-  .then(() => console.log("✅ Connected to MongoDB (scanner)"))
-  .catch((err) => {
-    console.error("❌ MongoDB connection failed:", err.message);
-    process.exit(1);
-  });
+// await mongoose
+//   .connect(MONGO_URI)
+//   .then(() => console.log("✅ Connected to MongoDB (scanner)"))
+//   .catch((err) => {
+//     console.error("❌ MongoDB connection failed:", err.message);
+//     process.exit(1);
+//   });
 
 // ---------------- CONTINUOUS LOOP ----------------
 async function runScannerCycle() {
