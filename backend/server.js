@@ -16,15 +16,14 @@ import scanRunRouter from "./api/scanRun.js";
 import usbRoutes from "./api/usb.js";
 import tasksRoutes from "./api/tasks.js";
 import visualizerDataRoute from "./api/visualizerData.js";
+import logs from "./api/logs.js";
+import installed from "./api/installed.js";
 
-// Import models
 import User from "./models/User.js";
 import connectDB from "./db.js";
 
-// Import visualizer continuous sync
 import { startContinuousSync } from "./visualizer-script/visualizer.js";
 
-// ✅ Import visualizer live scanner
 import "./visualizer-script/visualizerScanner.js";
 
 const app = express();
@@ -83,7 +82,9 @@ app.use("/api/scan", scanRunRouter);
 app.use("/api", tasksRoutes);
 app.use("/api/usb", usbRoutes);
 app.use("/api/visualizer-data", visualizerDataRoute);
-
+app.use("/api/", visualizerDataRoute); 
+app.use("/api/", installed)
+app.use("/api/", logs);
 // ----------------------- CONFIGURATION ENDPOINTS -----------------------
 app.get("/api/check-config", (req, res) => {
   try {
@@ -147,11 +148,14 @@ app.post("/login", async (req, res) => {
   res.json({ token });
 });
 
+
+
 // ----------------------- START SERVER -----------------------
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`✅ Server running at http://localhost:${PORT}`);
 
-  // Start continuous visualizer auto-sync
-  startContinuousSync(30000); // runs every 30 seconds
+  startContinuousSync(30000); 
 });
+
+
