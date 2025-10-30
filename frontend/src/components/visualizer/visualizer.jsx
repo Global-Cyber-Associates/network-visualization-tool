@@ -26,10 +26,7 @@ export default function Visualizer() {
         data.forEach((dev) => {
           const ip = dev.ip || "N/A";
           const isRouter = ip === routerIp;
-          const displayName =
-            dev.hostname && dev.hostname !== "Unknown"
-              ? dev.hostname
-              : "Unknown Device";
+          const displayName = dev.hostname || "Unknown Device"; // ✅ simplified hostname logic
 
           newDevicesMap[ip] = {
             ip,
@@ -225,13 +222,15 @@ export default function Visualizer() {
                       <div className="node-label">
                         <div className="node-name">{d.name}</div>
                         <div className="node-ip">{d.ip}</div>
-                        <div
-                          className={`node-status ${
-                            d.noAgent ? "no-agent" : "online"
-                          }`}
-                        >
-                          {d.status}
-                        </div>
+                        {d.type !== "router" && (
+                          <div
+                            className={`node-status ${
+                              d.noAgent ? "no-agent" : "online"
+                            }`}
+                          >
+                            {d.status}
+                          </div>
+                        )}
                       </div>
                     </foreignObject>
                   )}
