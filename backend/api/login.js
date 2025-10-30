@@ -9,7 +9,7 @@ dotenv.config();
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// ✅ POST /api/login
+// ✅ POST /api/login 
 router.post("/login", async (req, res) => {
   const { username, password } = req.body;
   const clientIp = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
