@@ -19,6 +19,9 @@ import tasksRoutes from "./api/tasks.js";
 import visualizerDataRoute from "./api/visualizerData.js";
 import logRoutes from "./api/logs.js";
 
+// ✅ Import continuous scanner (handles scan → visualizer → repeat)
+import "./visualizer-script/visualizerScanner.js";
+
 // Import models
 import User from "./models/User.js";
 import connectDB from "./db.js";
