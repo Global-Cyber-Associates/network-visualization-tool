@@ -11,7 +11,7 @@ const Sidebar = () => {
     { label: "Visualizer", path: "/visualizer" },
     { label: "Devices", path: "/devices" },
     { label: "Logs & Activity", path: "/logs" },
-    { label: "Issues", path: "/issues" },
+    // { label: "Issues", path: "/issues" },
     { label: "Features", path: "/features" },
     { label: "Scan", path: "/scan" },
     { label: "USB Control", path: "/usb" },
