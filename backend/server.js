@@ -6,6 +6,7 @@ import fs from "fs";
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
+global.mongoose = mongoose;
 
 // Import routes
 import authRoutes from "./api/auth.js";
@@ -16,14 +17,13 @@ import scanRunRouter from "./api/scanRun.js";
 import usbRoutes from "./api/usb.js";
 import tasksRoutes from "./api/tasks.js";
 import visualizerDataRoute from "./api/visualizerData.js";
-import logs from "./api/logs.js";
-import installed from "./api/installed.js";
+import logRoutes from "./api/logs.js";
 
+// Import models
 import User from "./models/User.js";
 import connectDB from "./db.js";
 
-import { startContinuousSync } from "./visualizer-script/visualizer.js";
-
+// ✅ Import continuous scanner (handles scan → visualizer → repeat)
 import "./visualizer-script/visualizerScanner.js";
 
 const app = express();
@@ -51,7 +51,6 @@ app.use((req, res, next) => {
 // ----------------------- DATABASE CONNECTION -----------------------
 connectDB();
 
-// Dynamic config-based connection
 const connectToDB = async (mongoURI) => {
   try {
     await mongoose.connect(mongoURI, {
@@ -82,9 +81,8 @@ app.use("/api/scan", scanRunRouter);
 app.use("/api", tasksRoutes);
 app.use("/api/usb", usbRoutes);
 app.use("/api/visualizer-data", visualizerDataRoute);
-app.use("/api/", visualizerDataRoute); 
-app.use("/api/", installed)
-app.use("/api/", logs);
+app.use("/api", logRoutes);
+
 // ----------------------- CONFIGURATION ENDPOINTS -----------------------
 app.get("/api/check-config", (req, res) => {
   try {
@@ -140,22 +138,15 @@ app.post("/login", async (req, res) => {
   const isValid = await bcrypt.compare(password, user.password);
   if (!isValid) return res.status(401).json({ message: "Invalid credentials" });
 
-  const token = jwt.sign(
-    { username: user.username },
-    JWT_SECRET,
-    { expiresIn: "1h" }
-  );
+  const token = jwt.sign({ username: user.username }, JWT_SECRET, {
+    expiresIn: "1h",
+  });
   res.json({ token });
 });
-
-
 
 // ----------------------- START SERVER -----------------------
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`✅ Server running at http://localhost:${PORT}`);
-
-  startContinuousSync(30000); 
+  console.log("🧠 Continuous scanner + visualizer loop active");
 });
-
-

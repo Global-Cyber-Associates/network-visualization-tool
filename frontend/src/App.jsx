@@ -14,7 +14,7 @@ import TaskManager from "./components/devices/Taskmanager/taskmanager.jsx";
 import UsbControl from "./components/usb/usb.jsx";
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
   const [isConfigured, setIsConfigured] = useState(null);
 
   // ✅ Check config on load

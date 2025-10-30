@@ -11,12 +11,6 @@ export default function Visualizer() {
   const [size, setSize] = useState({ width: 800, height: 400 });
   const [showDesc, setShowDesc] = useState(true);
 
-  // 💾 Restore saved positions
-  useEffect(() => {
-    const saved = localStorage.getItem("devicePositions");
-    if (saved) setPositions(JSON.parse(saved));
-  }, []);
-
   // 🔄 Fetch devices from backend
   const fetchDevices = async () => {
     try {
@@ -32,10 +26,7 @@ export default function Visualizer() {
         data.forEach((dev) => {
           const ip = dev.ip || "N/A";
           const isRouter = ip === routerIp;
-          const displayName =
-            dev.hostname && dev.hostname !== "Unknown"
-              ? dev.hostname
-              : "Unknown Device";
+          const displayName = dev.hostname || "Unknown Device"; // ✅ simplified hostname logic
 
           newDevicesMap[ip] = {
             ip,
@@ -77,11 +68,9 @@ export default function Visualizer() {
     }
   };
 
-  // 🔁 Auto-refresh every 1 second
+  // 🔁 Fetch once when mounted (no auto-refresh)
   useEffect(() => {
     fetchDevices();
-    const interval = setInterval(fetchDevices, 1000);
-    return () => clearInterval(interval);
   }, []);
 
   // 🔗 Create links (router → devices)
@@ -119,18 +108,16 @@ export default function Visualizer() {
 
       const router = devices.find((d) => d.type === "router") || devices[0];
       const others = devices.filter((d) => d.id !== router.id);
-      const newPos = { ...positions };
+      const newPos = {};
 
-      if (!newPos[router.id]) newPos[router.id] = { x: cx, y: cy };
+      newPos[router.id] = { x: cx, y: cy };
 
       others.forEach((dev, i) => {
-        if (!newPos[dev.id]) {
-          const angle = (i / others.length) * Math.PI * 2;
-          newPos[dev.id] = {
-            x: cx + Math.cos(angle) * radius,
-            y: cy + Math.sin(angle) * radius,
-          };
-        }
+        const angle = (i / others.length) * Math.PI * 2;
+        newPos[dev.id] = {
+          x: cx + Math.cos(angle) * radius,
+          y: cy + Math.sin(angle) * radius,
+        };
       });
 
       setPositions(newPos);
@@ -140,13 +127,6 @@ export default function Visualizer() {
     window.addEventListener("resize", computePositions);
     return () => window.removeEventListener("resize", computePositions);
   }, [devices]);
-
-  // 💾 Save positions
-  useEffect(() => {
-    if (Object.keys(positions).length > 0) {
-      localStorage.setItem("devicePositions", JSON.stringify(positions));
-    }
-  }, [positions]);
 
   return (
     <div className="visualizer-page">
@@ -242,13 +222,15 @@ export default function Visualizer() {
                       <div className="node-label">
                         <div className="node-name">{d.name}</div>
                         <div className="node-ip">{d.ip}</div>
-                        <div
-                          className={`node-status ${
-                            d.noAgent ? "no-agent" : "online"
-                          }`}
-                        >
-                          {d.status}
-                        </div>
+                        {d.type !== "router" && (
+                          <div
+                            className={`node-status ${
+                              d.noAgent ? "no-agent" : "online"
+                            }`}
+                          >
+                            {d.status}
+                          </div>
+                        )}
                       </div>
                     </foreignObject>
                   )}
