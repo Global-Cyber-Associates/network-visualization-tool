@@ -1,14 +1,16 @@
 from functions.ports import scan_ports
-from functions.sender import send_scan_results
+from functions.sender import send_scan_results, set_base_api_url
 from functions.system import get_system_info
-# from functions.network_scan import scan_network
 from functions.taskmanager import collect_process_info
 from functions.installed_apps import get_installed_apps
-
 import json
+import os
 
 if __name__ == "__main__":
-    # --- 1. Port Scan ---
+    # Load optional API override
+    api_url = os.getenv("API_BASE_URL", "http://localhost:5000/api")
+    set_base_api_url(api_url)
+
     target_ip = "127.0.0.1"
     port_range = "1-1024"
 
@@ -17,21 +19,17 @@ if __name__ == "__main__":
     print("[*] Port Scan Results:\n", json.dumps(port_results, indent=2))
     send_scan_results(port_results, endpoint_path="ports")
 
-    # --- 2. System Info ---
     print("\n[*] Collecting system information...\n")
     system_data = get_system_info()
     print("[*] System Information:\n", json.dumps(system_data, indent=2))
     send_scan_results(system_data, endpoint_path="system")
 
-    # Extract deviceId
     device_id = system_data.get("machine_id") or system_data.get("hostname") or "unknown-device"
 
-    #--- 3. Installed Apps Data ---
     print("\n[*] Collecting installed applications...\n")
     apps = get_installed_apps()
     send_scan_results({"deviceId": device_id, "applications": apps}, endpoint_path="installed-apps")
 
-    # --- 4. Task Manager Data ---
     print("\n[*] Collecting task manager data...\n")
     task_data = collect_process_info()
     applications = task_data.get("applications", [])

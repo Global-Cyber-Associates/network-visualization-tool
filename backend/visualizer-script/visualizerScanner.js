@@ -25,7 +25,7 @@ async function waitForMongoURI() {
   let uri = getMongoURI();
 
   while (!uri.startsWith("mongodb://") && !uri.startsWith("mongodb+srv://")) {
-    console.log("⚠️ Waiting for valid MongoDB URI in config.json...");
+    console.log("⚠️ Waiting for valid MongoDB Setup...");
     await new Promise((r) => setTimeout(r, 3000));
     uri = getMongoURI();
   }
