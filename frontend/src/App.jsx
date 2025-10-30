@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-
-import Sidebar from "./components/navigation/sidenav.jsx";
 import Dashboard from "./components/dashboard/dashboard.jsx";
 import Visualizer from "./components/visualizer/visualizer.jsx";
 import Devices from "./components/devices/devices.jsx";
@@ -10,16 +8,16 @@ import Logs from "./components/Logs/logs.jsx";
 import Issues from "./components/issues/issues.jsx";
 import Features from "./components/Features/features.jsx";
 import Login from "./components/login/login.jsx";
-import Setup from "./components/setup/Setup.jsx"; // ✅ new setup page
+import Setup from "./components/setup/Setup.jsx";
 import Scan from "./components/scan/scan.jsx";
 import TaskManager from "./components/devices/Taskmanager/taskmanager.jsx";
 import UsbControl from "./components/usb/usb.jsx";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isConfigured, setIsConfigured] = useState(null); // null = loading
+  const [isConfigured, setIsConfigured] = useState(null);
 
-  // ✅ Check if backend is configured (config.json exists)
+  // ✅ Check config on load
   useEffect(() => {
     const checkConfig = async () => {
       try {
@@ -34,6 +32,14 @@ function App() {
     checkConfig();
   }, []);
 
+  // ✅ Check token on mount to persist login
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      setIsAuthenticated(true);
+    }
+  }, []);
+
   if (isConfigured === null) {
     return <div style={{ padding: "20px" }}>Loading...</div>;
   }
@@ -41,7 +47,7 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* ✅ Setup page if not configured */}
+        {/* Setup flow */}
         {!isConfigured && (
           <>
             <Route path="/setup" element={<Setup />} />
@@ -49,7 +55,7 @@ function App() {
           </>
         )}
 
-        {/* ✅ If configured, normal app flow */}
+        {/* Main app flow */}
         {isConfigured && (
           <>
             {/* Public route: login */}
@@ -58,7 +64,7 @@ function App() {
               element={<Login onLogin={() => setIsAuthenticated(true)} />}
             />
 
-            {/* Protected area with sidebar */}
+            {/* Protected routes */}
             <Route
               path="/*"
               element={
@@ -74,7 +80,6 @@ function App() {
                         <Route path="/logs" element={<Logs />} />
                         <Route path="/issues" element={<Issues />} />
                         <Route path="/features" element={<Features />} />
-                        <Route path="*" element={<Navigate to="/" replace />} />
                         <Route path="/scan" element={<Scan />} />
                         <Route path="/usb" element={<UsbControl />} />
                       </Routes>

@@ -36,10 +36,6 @@ if __name__ == "__main__":
     # task_data = collect_process_info()
     # applications = task_data.get("applications", [])
     # background_processes = task_data.get("background_processes", [])
-
-
-
-
     # task_payload = {
     #     "deviceId": device_id,
     #     "applications": applications,
