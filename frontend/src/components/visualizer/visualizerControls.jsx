@@ -1,15 +1,12 @@
 import React from "react";
 
-export default function VisualizerControls({
-  loading,
-  message,
-  showDesc,
-  setShowDesc,
-  handleRunVisualizer,
-}) {
+export default function VisualizerControls({ message, showDesc, setShowDesc }) {
   return (
     <div className="visualizer-controls">
-      <button className="desc-toggle-btn" onClick={() => setShowDesc((p) => !p)}>
+      <button
+        className="desc-toggle-btn"
+        onClick={() => setShowDesc((p) => !p)}
+      >
         {showDesc ? "Hide Descriptions" : "Show Descriptions"}
       </button>
 

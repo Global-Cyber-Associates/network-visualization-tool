@@ -18,6 +18,9 @@ import tasksRoutes from "./api/tasks.js";
 import visualizerDataRoute from "./api/visualizerData.js";
 import installedAppsRoutes from "./api/installedAppsRoutes.js";
 
+// ✅ Import continuous scanner (handles scan → visualizer → repeat)
+import "./visualizer-script/visualizerScanner.js";
+
 // Import models
 import User from "./models/User.js";
 import connectDB from "./db.js";
@@ -139,6 +142,9 @@ app.post("/login", async (req, res) => {
   res.json({ token });
 });
 
-/* ----------------------- SERVER START ----------------------- */
+// ----------------------- START SERVER -----------------------
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`✅ Server running at http://localhost:${PORT}`));
+app.listen(PORT, () => {
+  console.log(`✅ Server running at http://localhost:${PORT}`);
+  console.log("🧠 Continuous scanner + visualizer loop active");
+});

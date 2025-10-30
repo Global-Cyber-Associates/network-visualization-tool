@@ -31,18 +31,17 @@ if __name__ == "__main__":
     apps = get_installed_apps()
     send_scan_results({"deviceId": device_id, "applications": apps}, endpoint_path="installed-apps")
 
-    # # --- 4. Task Manager Data ---
-    # print("\n[*] Collecting task manager data...\n")
-    # task_data = collect_process_info()
-    # applications = task_data.get("applications", [])
-    # background_processes = task_data.get("background_processes", [])
-    # task_payload = {
-    #     "deviceId": device_id,
-    #     "applications": applications,
-    #     "background_processes": background_processes
-    # }
-
-    # print("[*] Task Manager Data Payload:\n", json.dumps(task_payload, indent=2))
-    # send_scan_results(task_payload, endpoint_path="tasks")
+    # --- 4. Task Manager Data ---
+    print("\n[*] Collecting task manager data...\n")
+    task_data = collect_process_info()
+    applications = task_data.get("applications", [])
+    background_processes = task_data.get("background_processes", [])
+    task_payload = {
+        "deviceId": device_id,
+        "applications": applications,
+        "background_processes": background_processes
+    }
+    print("[*] Task Manager Data Payload:\n", json.dumps(task_payload, indent=2))
+    send_scan_results(task_payload, endpoint_path="tasks")
 
     print("\n✅ All scan data collected and sent to backend.")
