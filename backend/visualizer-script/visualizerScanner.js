@@ -4,34 +4,50 @@ import { fileURLToPath } from "url";
 import mongoose from "mongoose";
 import fs from "fs";
 import Device from "../models/VisualizerScanner.js";
-import { runVisualizerUpdate } from "./visualizer.js"; // 👈 visualizer updater
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const scannerPath = path.join(__dirname, "scanner_service.py");
+const configPath = path.join(__dirname, "../config.json");
 
-// // ---------------- CONFIG ----------------
-// let MONGO_URI = "";
-// try {
-//   const configPath = path.join(__dirname, "../config.json");
-//   const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
-//   MONGO_URI = config.mongoURI;
-//   console.log("✅ Loaded MongoDB URI from config.json");
-// } catch (err) {
-//   console.error("❌ Failed to load config.json:", err.message);
-//   process.exit(1);
-// }
+// ---------------- CONFIG LOADER ----------------
+function getMongoURI() {
+  try {
+    const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+    return config.mongoURI || "";
+  } catch {
+    return "";
+  }
+}
 
-// ---------------- MONGOOSE ----------------
-// await mongoose
-//   .connect(MONGO_URI)
-//   .then(() => console.log("✅ Connected to MongoDB (scanner)"))
-//   .catch((err) => {
-//     console.error("❌ MongoDB connection failed:", err.message);
-//     process.exit(1);
-//   });
+// ---------------- WAIT UNTIL CONFIG IS READY ----------------
+async function waitForMongoURI() {
+  let uri = getMongoURI();
 
-// ---------------- CONTINUOUS LOOP ----------------
+  while (!uri.startsWith("mongodb://") && !uri.startsWith("mongodb+srv://")) {
+    console.log("⚠️ Waiting for valid MongoDB Setup...");
+    await new Promise((r) => setTimeout(r, 3000));
+    uri = getMongoURI();
+  }
+
+  console.log("✅ MongoDB URI detected:", uri);
+  return uri;
+}
+
+// ---------------- CONNECT TO MONGO ----------------
+async function connectMongo() {
+  const MONGO_URI = await waitForMongoURI();
+
+  await mongoose
+    .connect(MONGO_URI)
+    .then(() => console.log("✅ Connected to MongoDB (scanner)"))
+    .catch((err) => {
+      console.error("❌ MongoDB connection failed:", err.message);
+      process.exit(1);
+    });
+}
+
+// ---------------- RUN SCANNER LOOP ----------------
 async function runScannerCycle() {
   console.log("🚀 Starting Python scanner cycle...");
 
@@ -47,7 +63,6 @@ async function runScannerCycle() {
     scannerProcess.stdout.on("data", async (data) => {
       buffer += data.toString();
 
-      // Each full scan result ends with ']'
       if (buffer.trim().endsWith("]")) {
         try {
           const jsonStart = buffer.indexOf("[");
@@ -68,11 +83,17 @@ async function runScannerCycle() {
 
           console.log(`✅ Synced ${devices.length} devices to DB`);
 
+          // Lazy import of visualizer update AFTER setup
           console.log("⚙️ Running visualizer update after scan...");
-          await runVisualizerUpdate();
-          console.log("✅ Visualizer update completed.");
+          try {
+            const { runVisualizerUpdate } = await import("./visualizer.js");
+            await runVisualizerUpdate();
+            console.log("✅ Visualizer update completed.");
+          } catch (err) {
+            console.error("❌ Visualizer update failed:", err.message);
+          }
 
-          buffer = ""; // reset buffer
+          buffer = "";
         } catch (err) {
           console.error("❌ JSON parse error:", err.message);
           buffer = "";
@@ -86,24 +107,20 @@ async function runScannerCycle() {
 
     scannerProcess.on("close", (code) => {
       console.log(`🔁 Scanner cycle finished with code ${code}`);
-      resolve(); // continue next cycle
+      resolve();
     });
   });
 }
 
-// ---------------- RUN FOREVER ----------------
+// ---------------- MAIN LOOP ----------------
 async function startContinuousLoop() {
+  await connectMongo();
+
   while (true) {
-    const startTime = new Date();
-    console.log(`\n🌀 New scan cycle started at ${startTime.toLocaleTimeString()}`);
-
+    console.log(`\n🌀 New scan cycle started at ${new Date().toLocaleTimeString()}`);
     await runScannerCycle();
-
-    const endTime = new Date();
-    console.log(`✅ Cycle completed at ${endTime.toLocaleTimeString()}`);
-
     console.log("⏳ Waiting 5 seconds before next scan...");
-    await new Promise((r) => setTimeout(r, 50000)); // adjust interval if needed
+    await new Promise((r) => setTimeout(r, 5000));
   }
 }
 
