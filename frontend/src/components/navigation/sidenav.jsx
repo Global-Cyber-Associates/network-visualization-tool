@@ -37,8 +37,6 @@ const Sidebar = () => {
                 }
                 end
               >
-                {/* Optional icon for USB section */}
-                {item.label === "USB Control" && <Usb size={16} style={{ marginRight: "6px" }} />}
                 {item.label}
               </NavLink>
             </li>

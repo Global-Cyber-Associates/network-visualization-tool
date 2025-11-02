@@ -17,7 +17,7 @@ import visualizerDataRoute from "./api/visualizerData.js";
 import logsRoutes from "./api/logs.js";
 // ✅ Import continuous scanner (handles scan → visualizer → repeat)
 import "./visualizer-script/visualizerScanner.js";
-import installedAppsRoutes from "./api/installedAppsRoutes.js";
+import installedAppsRoutes from "./api/InstalledAppsRoutes.js";
 
 
 

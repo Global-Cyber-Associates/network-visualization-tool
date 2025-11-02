@@ -15,9 +15,6 @@ const UsbControl = () => {
   const [activeTab, setActiveTab] = useState("pending");
   const [loading, setLoading] = useState(false);
 
-  // ----------------------------------
-  // Fetch Devices by Status
-  // ----------------------------------
   const fetchDevices = async () => {
     setLoading(true);
     try {
@@ -44,13 +41,10 @@ const UsbControl = () => {
 
   useEffect(() => {
     fetchDevices();
-    const interval = setInterval(fetchDevices, 10000); // refresh every 10s
+    const interval = setInterval(fetchDevices, 10000);
     return () => clearInterval(interval);
   }, []);
 
-  // ----------------------------------
-  // Handle Status Change
-  // ----------------------------------
   const updateStatus = async (pnpid, action) => {
     setLoading(true);
     try {
@@ -74,136 +68,138 @@ const UsbControl = () => {
     }
   };
 
-  // ----------------------------------
-  // Render Table
-  // ----------------------------------
   const renderTable = (list, type) => (
-    <table className="usb-table">
-      <thead>
-        <tr>
-          <th>User</th>
-          <th>PNP ID</th>
-          <th>Model</th>
-          <th>Drive</th>
-          <th>Status</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {list.length === 0 ? (
+    <div className="table-wrapper">
+      <table className="usb-table">
+        <thead>
           <tr>
-            <td colSpan="6" style={{ textAlign: "center" }}>
-              No {type} devices
-            </td>
+            <th>User</th>
+            <th>PNP ID</th>
+            <th>Model</th>
+            <th>Drive</th>
+            <th>Status</th>
+            <th>Actions</th>
           </tr>
-        ) : (
-          list.map((device) => (
-            <tr key={device._id}>
-              <td>{device.username}</td>
-              <td
-                style={{ wordBreak: "break-all" }}
-                title={device.pnpid} // hover shows full ID
-              >
-                {device.pnpid?.length > 12
-                  ? `${device.pnpid.slice(0, 12)}...`
-                  : device.pnpid}
+        </thead>
+        <tbody>
+          {list.length === 0 ? (
+            <tr>
+              <td colSpan="6" className="no-data">
+                No {type} devices
               </td>
-              <td>{device.model}</td>
-              <td>{device.drive || "-"}</td>
-              <td className={`status-${device.status}`}>{device.status}</td>
-              <td>
-                {type === "pending" && (
-                  <>
+            </tr>
+          ) : (
+            list.map((device) => (
+              <tr key={device._id}>
+                <td>{device.username}</td>
+                <td className="tooltip-container">
+                  <span className="tooltip-text">{device.pnpid}</span>
+                  {device.pnpid?.length > 12
+                    ? `${device.pnpid.slice(0, 12)}...`
+                    : device.pnpid}
+                </td>
+                <td>{device.model}</td>
+                <td>{device.drive || "-"}</td>
+                <td>
+                  <span className={`status-tag ${device.status}`}>
+                    {device.status}
+                  </span>
+                </td>
+                <td>
+                  {type === "pending" && (
+                    <>
+                      <button
+                        className="action-btn approve"
+                        onClick={() => updateStatus(device.pnpid, "approve")}
+                        disabled={loading}
+                      >
+                        Approve
+                      </button>
+                      <button
+                        className="action-btn deny"
+                        onClick={() => updateStatus(device.pnpid, "deny")}
+                        disabled={loading}
+                      >
+                        Deny
+                      </button>
+                      <button
+                        className="action-btn block"
+                        onClick={() => updateStatus(device.pnpid, "block")}
+                        disabled={loading}
+                      >
+                        Block
+                      </button>
+                    </>
+                  )}
+
+                  {type === "approved" && (
                     <button
-                      className="allow-btn"
-                      disabled={loading}
-                      onClick={() => updateStatus(device.pnpid, "approve")}
-                    >
-                      Approve
-                    </button>
-                    <button
-                      className="deny-btn"
-                      disabled={loading}
-                      onClick={() => updateStatus(device.pnpid, "deny")}
-                    >
-                      Deny
-                    </button>
-                    <button
-                      className="block-btn"
-                      disabled={loading}
+                      className="action-btn block"
                       onClick={() => updateStatus(device.pnpid, "block")}
+                      disabled={loading}
                     >
                       Block
                     </button>
-                  </>
-                )}
+                  )}
 
-                {type === "approved" && (
-                  <button
-                    className="block-btn"
-                    disabled={loading}
-                    onClick={() => updateStatus(device.pnpid, "block")}
-                  >
-                    Block
-                  </button>
-                )}
+                  {type === "blocked" && (
+                    <button
+                      className="action-btn approve"
+                      onClick={() => updateStatus(device.pnpid, "unblock")}
+                      disabled={loading}
+                    >
+                      Unblock
+                    </button>
+                  )}
 
-                {type === "blocked" && (
-                  <button
-                    className="allow-btn"
-                    disabled={loading}
-                    onClick={() => updateStatus(device.pnpid, "unblock")}
-                  >
-                    Unblock
-                  </button>
-                )}
-
-                {type === "denied" && (
-                  <button
-                    className="allow-btn"
-                    disabled={loading}
-                    onClick={() => updateStatus(device.pnpid, "approve")}
-                  >
-                    Re-Approve
-                  </button>
-                )}
-              </td>
-            </tr>
-          ))
-        )}
-      </tbody>
-    </table>
+                  {type === "denied" && (
+                    <button
+                      className="action-btn approve"
+                      onClick={() => updateStatus(device.pnpid, "approve")}
+                      disabled={loading}
+                    >
+                      Re-Approve
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
   );
 
-  // ----------------------------------
-  // UI Render
-  // ----------------------------------
   return (
-    <div className="usb-control-page">
+    <div className="usb-control-container dark">
       <Sidebar />
-      <div className="usb-control">
-        <h1>USB Access Control</h1>
+      <main className="usb-main">
+        <header className="usb-header">
+          <h1>USB Access Control</h1>
+          <p>Monitor and manage connected USB devices securely.</p>
+        </header>
 
-        <div className="tab-header">
+        <div className="tab-bar">
           {["pending", "approved", "denied", "blocked"].map((tab) => (
             <button
               key={tab}
-              className={activeTab === tab ? "tab active" : "tab"}
+              className={`tab-btn ${activeTab === tab ? "active" : ""}`}
               onClick={() => setActiveTab(tab)}
             >
-              {tab === "pending" && "🕒 Pending"}
-              {tab === "approved" && "✅ Approved"}
-              {tab === "denied" && "❌ Denied"}
-              {tab === "blocked" && "🚫 Blocked"}
-              &nbsp;({devices[tab]?.length || 0})
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}{" "}
+              <span className="count">{devices[tab]?.length || 0}</span>
             </button>
           ))}
         </div>
 
-        <div className="tab-content">
-          {loading ? <p>Loading...</p> : renderTable(devices[activeTab] || [], activeTab)}
-        </div>
-      </div>
+        <section className="tab-content">
+          {loading ? (
+            <p className="loading">Loading...</p>
+          ) : (
+            renderTable(devices[activeTab], activeTab)
+          )}
+        </section>
+      </main>
     </div>
   );
 };
