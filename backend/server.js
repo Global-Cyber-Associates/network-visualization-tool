@@ -6,10 +6,8 @@ import fs from "fs";
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
-global.mongoose = mongoose;
-
+import { addLog } from "./utils/logger.js";
 // Import routes
-import authRoutes from "./api/auth.js";
 import protectedRoutes from "./api/protected.js";
 import portsRoutes from "./api/ports.js";
 import systemRoutes from "./api/system.js";
@@ -75,6 +73,8 @@ if (fs.existsSync(CONFIG_PATH)) {
     console.error("Error reading config file:", err.message);
   }
 }
+
+await addLog("system", "Server started successfully");
 
 // ----------------------- ROUTES -----------------------
 app.use("/api/auth", authRoutes);
@@ -147,8 +147,8 @@ app.post("/login", async (req, res) => {
   });
   res.json({ token });
 });
+import authRoutes from "./api/auth.js";
 
-// ----------------------- START SERVER -----------------------
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`✅ Server running at http://localhost:${PORT}`);

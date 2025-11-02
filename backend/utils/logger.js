@@ -1,9 +1,6 @@
 // backend/utils/logger.js
 import Log from "../models/Log.js";
 
-/**
- * Adds a log to MongoDB
- */
 export const addLog = async (type, message, actor = "system", metadata = {}) => {
   try {
     if (!Log.db.readyState) {

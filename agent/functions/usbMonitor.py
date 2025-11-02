@@ -6,23 +6,33 @@ import time
 import requests
 import tkinter as tk
 from tkinter import messagebox
+from dotenv import load_dotenv
+import subprocess
 
 # -----------------------------
-# Windows API constants
+# Load environment
 # -----------------------------
+load_dotenv()
+
+API_BASE = os.getenv("API_BASE")
+if not API_BASE:
+    raise ValueError("❌ Missing API_BASE in .env file!")
+
+API_BASE = API_BASE.rstrip("/") + "/usb"
+
 GENERIC_READ = 0x80000000
 GENERIC_WRITE = 0x40000000
 FILE_SHARE_READ = 0x00000001
 FILE_SHARE_WRITE = 0x00000002
 OPEN_EXISTING = 3
-
 IOCTL_DISMOUNT_VOLUME = 0x00090020
 IOCTL_STORAGE_EJECT_MEDIA = 0x2D4808
 
-kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
+kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+
 
 # -----------------------------
-# Functions
+# Core eject helpers
 # -----------------------------
 def open_volume(drive_letter):
     path = f"\\\\.\\{drive_letter}:"
@@ -33,11 +43,12 @@ def open_volume(drive_letter):
         None,
         OPEN_EXISTING,
         0,
-        None
+        None,
     )
     if handle == -1:
         raise ctypes.WinError(ctypes.get_last_error())
     return handle
+
 
 def dismount_and_eject(handle):
     bytes_returned = wintypes.DWORD()
@@ -45,98 +56,124 @@ def dismount_and_eject(handle):
     kernel32.DeviceIoControl(handle, IOCTL_STORAGE_EJECT_MEDIA, None, 0, None, 0, ctypes.byref(bytes_returned), None)
     kernel32.CloseHandle(handle)
 
+
+def force_eject_drive(drive_letter):
+    try:
+        subprocess.run(
+            ["powershell", "-Command",
+             f"(Get-WmiObject Win32_Volume -Filter \"DriveLetter='{drive_letter}:'\").Eject()"],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+        )
+    except Exception as e:
+        print(f"⚠️ Force eject fallback failed: {e}")
+
+
+# -----------------------------
+# Device enumeration
+# -----------------------------
 def list_usb_drives():
-    c = wmi.WMI()
     drives = []
+    c = wmi.WMI()
     for disk in c.Win32_DiskDrive(InterfaceType="USB"):
-        for partition in disk.associators("Win32_DiskDriveToDiskPartition"):
-            for logical in partition.associators("Win32_LogicalDiskToPartition"):
-                drives.append({
-                    "drive_letter": logical.DeviceID[0],
-                    "model": disk.Model,
-                    "pnpid": disk.PNPDeviceID.upper()
-                })
+        try:
+            for part in disk.associators("Win32_DiskDriveToDiskPartition"):
+                for logical in part.associators("Win32_LogicalDiskToPartition"):
+                    drives.append({
+                        "drive_letter": logical.DeviceID[0],
+                        "model": disk.Model,
+                        "pnpid": disk.PNPDeviceID.upper()
+                    })
+        except Exception:
+            continue
     return drives
+
 
 # -----------------------------
 # Backend communication
 # -----------------------------
-API_BASE = "http://localhost:5000/api/usb"  # Backend USB API
+def get_approved_list():
+    try:
+        res = requests.get(f"{API_BASE}/approved", timeout=5)
+        if res.status_code == 200:
+            return {a["pnpid"] for a in res.json()}
+    except Exception as e:
+        print(f"⚠️ Failed to fetch approved list: {e}")
+    return set()
+
 
 def send_request_to_backend(username, model, pnpid, drive):
     try:
         data = {"username": username, "model": model, "pnpid": pnpid, "drive": drive}
-        res = requests.post(f"{API_BASE}/request", json=data)
+        res = requests.post(f"{API_BASE}/request", json=data, timeout=5)
         return res.status_code in (200, 400)
     except Exception as e:
         print(f"⚠️ Failed to send request to backend: {e}")
         return False
 
-def is_approved(pnpid):
-    try:
-        res = requests.get(f"{API_BASE}/approved")
-        if res.status_code == 200:
-            approved = res.json()
-            return any(a['pnpid'] == pnpid for a in approved)
-    except Exception as e:
-        print(f"⚠️ Failed to check approval status: {e}")
-    return False
 
 # -----------------------------
-# Notification popup
+# UI notifications (optional)
 # -----------------------------
-def notify_approval(model, drive_letter, pnpid):
+def notify_revoked(model, drive_letter):
     root = tk.Tk()
     root.withdraw()
-    msg = (
-        f"USB Approved by Admin!\n\n"
-        f"Model: {model}\n"
-        f"⚠️ Please unplug and re-insert the device."
+    messagebox.showwarning(
+        "USB Revoked",
+        f"Access revoked by admin for:\n\nModel: {model}\nDrive: {drive_letter}:",
     )
-    messagebox.showinfo("USB Approved", msg)
     root.destroy()
 
+
 # -----------------------------
-# Main Monitor Loop
+# Main USB monitor entrypoint
 # -----------------------------
-print("🔒 USB Blocker Agent started. Monitoring continuously...\n")
-seen_devices = set()
-USERNAME = os.getlogin()  # or set manually
+def monitor_usb_devices(interval=3):
+    print("🔒 USB Blocker Agent started. Monitoring continuously...\n")
+    seen_devices = set()
+    approved_cache = set()
+    USERNAME = os.getlogin()
 
-while True:
-    usb_drives = list_usb_drives()
-    current_ids = {usb['pnpid'] for usb in usb_drives}
+    while True:
+        connected = list_usb_drives()
+        current_ids = {usb["pnpid"] for usb in connected}
+        approved_now = get_approved_list()
+        new_devices = [usb for usb in connected if usb["pnpid"] not in seen_devices]
 
-    new_devices = [usb for usb in usb_drives if usb['pnpid'] not in seen_devices]
+        # New USBs
+        for usb in new_devices:
+            print(f"\nDetected: {usb['model']} ({usb['drive_letter']}:)")
 
-    for usb in new_devices:
-        print(f"\nDetected new USB: {usb['model']} ({usb['pnpid']}) at {usb['drive_letter']}:")
+            if usb["pnpid"] in approved_now:
+                print(f"✔️ Approved USB: {usb['pnpid']}")
+                approved_cache.add(usb["pnpid"])
+                continue
 
-        # ✅ Check if already approved
-        if is_approved(usb['pnpid']):
-            print(f"✔️ USB {usb['pnpid']} is already approved. Skipping request.")
-            continue
+            # Unauthorized eject
+            try:
+                handle = open_volume(usb["drive_letter"])
+                dismount_and_eject(handle)
+                print(f"❌ Unauthorized device ejected: {usb['drive_letter']}:")
+            except Exception as e:
+                print(f"⚠️ Normal eject failed: {e}. Trying force eject...")
+                force_eject_drive(usb["drive_letter"])
+                print(f"💥 Force ejection attempted for {usb['drive_letter']}:")
+            
+            if send_request_to_backend(USERNAME, usb["model"], usb["pnpid"], usb["drive_letter"]):
+                print("📤 Approval request sent to backend.")
 
-        # ❌ Block unauthorized USB immediately
-        try:
-            handle = open_volume(usb['drive_letter'])
-            dismount_and_eject(handle)
-            print(f"❌ Unauthorized USB {usb['pnpid']} removed.")
-        except Exception as e:
-            print(f"⚠️ Failed to remove: {e}")
+        # Revoked devices
+        for usb in connected:
+            if usb["pnpid"] in approved_cache and usb["pnpid"] not in approved_now:
+                try:
+                    handle = open_volume(usb["drive_letter"])
+                    dismount_and_eject(handle)
+                    print(f"🚫 Revoked device ejected: {usb['drive_letter']}:")
+                    notify_revoked(usb["model"], usb["drive_letter"])
+                    approved_cache.discard(usb["pnpid"])
+                except Exception as e:
+                    print(f"⚠️ Failed eject revoked device: {e}")
+                    force_eject_drive(usb["drive_letter"])
+                    print(f"💥 Force ejection fallback executed for {usb['drive_letter']}:")
 
-        # 📤 Send request for approval
-        if send_request_to_backend(USERNAME, usb['model'], usb['pnpid'], usb['drive_letter']):
-            print(f"📤 Request sent to backend for approval.")
-
-            # ⏳ Poll until approved
-            while not is_approved(usb['pnpid']):
-                print(f"⏳ Waiting for backend approval for {usb['pnpid']}...")
-                time.sleep(3)
-
-            # ✅ Approved
-            print(f"✔️ USB {usb['pnpid']} approved by backend.")
-            notify_approval(usb['model'], usb['drive_letter'], usb['pnpid'])
-
-    seen_devices = current_ids
-    time.sleep(3)
+        seen_devices = current_ids
+        time.sleep(interval)
