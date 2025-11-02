@@ -215,7 +215,7 @@ def main():
         out = results_to_json(mac_map)
         print(json.dumps(out, indent=2))
         sys.stdout.flush()
-        time.sleep(1)
+        time.sleep(5)
 
 if __name__ == "__main__":
     main()

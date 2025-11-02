@@ -48,7 +48,7 @@ router.get("/", async (req, res) => {
 });
 
 /* ---------------------- GET: Get Apps for Specific Device ---------------------- */
-router.get("/:deviceId", async (req, res) => {
+router.get("/apps/:deviceId", async (req, res) => {
   try {
     const { deviceId } = req.params;
     const apps = await InstalledApp.findOne({ deviceId });

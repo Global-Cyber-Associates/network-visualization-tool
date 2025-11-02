@@ -6,7 +6,7 @@ import os
 from dotenv import load_dotenv
 
 from functions.ports import scan_ports
-from functions.sender import send_scan_results
+from functions.sender import send_scan_results, set_base_api_url
 from functions.system import get_system_info
 from functions.taskmanager import collect_process_info
 from functions.installed_apps import get_installed_apps
@@ -23,13 +23,11 @@ def run_scans():
     print("[*] Port Scan Results:\n", json.dumps(port_results, indent=2))
     send_scan_results(port_results, endpoint_path="ports")
 
-    # --- 2. System Info ---
     print("\n[*] Collecting system information...\n")
     system_data = get_system_info()
     print("[*] System Information:\n", json.dumps(system_data, indent=2))
     send_scan_results(system_data, endpoint_path="system")
 
-    # Extract deviceId
     device_id = system_data.get("machine_id") or system_data.get("hostname") or "unknown-device"
 
     # --- 3. Installed Apps ---

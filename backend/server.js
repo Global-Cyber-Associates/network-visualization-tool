@@ -6,7 +6,6 @@ import fs from "fs";
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
-import { addLog } from "./utils/logger.js";
 // Import routes
 import protectedRoutes from "./api/protected.js";
 import portsRoutes from "./api/ports.js";
@@ -15,11 +14,12 @@ import scanRunRouter from "./api/scanRun.js";
 import usbRoutes from "./api/usb.js";
 import tasksRoutes from "./api/tasks.js";
 import visualizerDataRoute from "./api/visualizerData.js";
-import logRoutes from "./api/logs.js";
-
 import logsRoutes from "./api/logs.js";
 // ✅ Import continuous scanner (handles scan → visualizer → repeat)
 import "./visualizer-script/visualizerScanner.js";
+import installedAppsRoutes from "./api/installedAppsRoutes.js";
+
+
 
 // Import models
 import User from "./models/User.js";
@@ -27,6 +27,7 @@ import connectDB from "./db.js";
 
 // ✅ Import continuous scanner (handles scan → visualizer → repeat)
 import "./visualizer-script/visualizerScanner.js";
+import { addLog } from "./utils/logger.js";
 
 const app = express();
 app.use(cors());
@@ -86,6 +87,12 @@ app.use("/api", tasksRoutes);
 app.use("/api/usb", usbRoutes);
 app.use("/api/visualizer-data", visualizerDataRoute);
 app.use("/api", logsRoutes);
+app.use("/api/installed-apps", installedAppsRoutes);
+
+
+    await addLog("Server Start", "Server Started Successfully", "admin", {
+    });
+
 
 // ----------------------- CONFIGURATION ENDPOINTS -----------------------
 app.get("/api/check-config", (req, res) => {
