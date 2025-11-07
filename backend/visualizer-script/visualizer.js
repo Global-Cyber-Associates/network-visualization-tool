@@ -3,21 +3,17 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import ScanResult from "../models/VisualizerScanner.js";
-import SystemInfo from "../models/system.js";
+import SystemInfo from "../models/SystemInfo.js";
 import VisualizerData from "../models/VisualizerData.js";
 
-// -------------------------------------------------------------
-// Setup file paths and load MongoDB connection string
-// -------------------------------------------------------------
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const configPath = path.resolve(__dirname, "../config.json");
 const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
 const MONGO_URI = config.mongoURI;
 
-// -------------------------------------------------------------
-// MongoDB connection helper
-// -------------------------------------------------------------
+
 let connected = false;
 async function connectDB() {
   if (!connected) {
@@ -30,9 +26,6 @@ async function connectDB() {
   }
 }
 
-// -------------------------------------------------------------
-// Main function: runVisualizerUpdate()
-// -------------------------------------------------------------
 export async function runVisualizerUpdate() {
   try {
     await connectDB();
@@ -59,8 +52,22 @@ export async function runVisualizerUpdate() {
       });
     });
 
-    // 3️⃣ Merge both collections into a final list
-    const finalDevices = allScans.map((dev) => {
+    // 3️⃣ Filter only devices that are *alive* (ping successful)
+    const aliveDevices = allScans.filter(
+      (dev) =>
+        dev.isAlive === true ||             // Explicit alive field
+        dev.ping_only === true ||           // Or ping-only but alive
+        dev.status === "alive" ||           // Or textual status
+        dev.pingSuccess === true            // In case stored differently
+    );
+
+    if (!aliveDevices.length) {
+      console.log("⚠️ No active devices detected — nothing updated.");
+      return;
+    }
+
+    // 4️⃣ Map alive devices to visualizer format
+    const finalDevices = aliveDevices.map((dev) => {
       const ip = (dev.ips?.[0] || "N/A").trim();
       const hasAgent = systemIPs.has(ip);
       const hostname = hasAgent ? ipToHostname.get(ip) || "Unknown" : "Unknown";
@@ -68,18 +75,19 @@ export async function runVisualizerUpdate() {
       return {
         ip,
         mac: dev.mac || "Unknown",
-        hostname,                     // ✅ Added hostname field
+        hostname,
         ping_only: !!dev.ping_only,
         noAgent: ip === "N/A" ? true : !hasAgent,
+        lastSeen: new Date(),
       };
     });
 
-    // 4️⃣ Replace visualizer data in DB
+    // 5️⃣ Replace visualizer data with alive ones only
     await VisualizerData.deleteMany({});
     await VisualizerData.insertMany(finalDevices);
 
     console.log(
-      `[${new Date().toLocaleTimeString()}] ✅ Visualizer updated (${finalDevices.length} devices)`
+      `[${new Date().toLocaleTimeString()}] ✅ Visualizer updated — ${finalDevices.length} active devices stored`
     );
   } catch (err) {
     console.error(

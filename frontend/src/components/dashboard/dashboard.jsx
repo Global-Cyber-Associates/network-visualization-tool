@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import "./dashboard.css";
 import Sidebar from "../navigation/sidenav.jsx";
-import sampleData from "../../devices.js";
+
+const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
 const Dashboard = () => {
   const [visualizerData, setVisualizerData] = useState([]);
@@ -12,8 +13,8 @@ const Dashboard = () => {
     const fetchData = async () => {
       try {
         const [vizRes, sysRes] = await Promise.all([
-          fetch("http://localhost:5000/api/visualizer-data"),
-          fetch("http://localhost:5000/api/system"),
+          fetch(`${backendUrl}/visualizer-data`),
+          fetch(`${backendUrl}/system`),
         ]);
 
         if (!vizRes.ok || !sysRes.ok) throw new Error("Failed to fetch data");
@@ -64,10 +65,6 @@ const Dashboard = () => {
 
   // Non-agent (unmanaged) devices
   const unmanagedDevices = visualizerData.filter((d) => d.noAgent === true);
-
-  // Optional: critical issues, logs from mock data
-  const criticalIssues = sampleData.issues.filter((i) => i.severity === "High").length;
-  const logsToday = sampleData.logs.length;
 
   return (
     <div className="dashboard">

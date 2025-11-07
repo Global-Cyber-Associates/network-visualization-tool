@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import "./scan.css";
 import Sidebar from "../navigation/sidenav.jsx";
 
+const backendUrl = import.meta.env.VITE_BACKEND_URL;
+
 const Scan = () => {
   const [loading, setLoading] = useState(false);
   const [devices, setDevices] = useState([]);
@@ -14,7 +16,7 @@ const Scan = () => {
 
     try {
       console.log("Starting network scan...");
-      const res = await fetch("http://localhost:5000/api/scan", {
+      const res = await fetch(`${backendUrl}api/scan`, {
         method: "post",
         headers: {
           "Content-Type": "application/json",

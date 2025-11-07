@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 
 const deviceSchema = new mongoose.Schema({
+  agentId: { type: String, required: true, index: true, ref: "Agent" },
   mac: { type: String, default: null },
   ips: [{ type: String }],
   vendor: { type: String, default: "Unknown" },

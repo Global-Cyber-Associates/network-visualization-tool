@@ -1,32 +1,32 @@
+// db.js
 import mongoose from "mongoose";
-import fs from "fs";
 
-let MONGO_URI = null;
+/**
+ * Connect to MongoDB.
+ * Usage: await connectMongo(uri);
+ * Throws on failure.
+ */
+export async function connectMongo(uri, opts = {}) {
+  if (!uri) {
+    throw new Error("MongoDB URI is required");
+  }
 
-if (fs.existsSync("./config.json")) {
-  const config = JSON.parse(fs.readFileSync("./config.json", "utf-8"));
-  if (config.mongoURI) {
-    MONGO_URI = config.mongoURI;
-    console.log("🔹 MongoDB URI from config:", MONGO_URI); // print URI
+  const defaultOpts = {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    serverSelectionTimeoutMS: 10000,
+    ...opts,
+  };
+
+  try {
+    await mongoose.connect(uri, defaultOpts);
+    console.log("✅ MongoDB connected");
+    return mongoose.connection;
+  } catch (err) {
+    console.error("❌ MongoDB connection error:", err.message || err);
+    throw err;
   }
 }
 
-const connectDB = async () => {
-  if (!MONGO_URI) {
-    console.log("⚠ No MongoDB URI found. Please run setup first.");
-    return;
-  }
-
-  try {
-    await mongoose.connect(MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-    console.log("✅ MongoDB connected");
-  } catch (err) {
-    console.error("❌ MongoDB connection error:", err.message);
-    process.exit(1);
-  }
-};
-
-export default connectDB;
+// also export mongoose if other modules need it
+export { mongoose };

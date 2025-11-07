@@ -1,10 +1,10 @@
 import mongoose from "mongoose";
 
-const logSchema = new mongoose.Schema({
-  type: { type: String, required: true },
-  message: { type: String, required: true },
-  actor: { type: String, default: "system" },
-  metadata: { type: Object, default: {} },
-}, { timestamps: true });
+const AgentLogSchema = new mongoose.Schema({
+  agentId: { type: String, required: true, index: true, ref: "Agent" },
+  eventType: { type: String },
+  payload: { type: Object },
+  timestamp: { type: Date, default: Date.now },
+});
 
-export default mongoose.model("Log", logSchema);
+export default mongoose.model("AgentLog", AgentLogSchema);

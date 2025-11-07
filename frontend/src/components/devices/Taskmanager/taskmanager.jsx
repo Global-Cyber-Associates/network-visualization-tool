@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import socket from "../../../utils/socket";
 import "./taskmanager.css";
 
 const TaskManager = () => {
-  const { id } = useParams();
+  const agentId = "agent_001"; // fixed agentId for now
   const [tasks, setTasks] = useState({ applications: [], background_processes: [] });
   const [device, setDevice] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -12,29 +12,42 @@ const TaskManager = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchTasks = async () => {
-      try {
-        const systemRes = await axios.get("http://localhost:5000/api/system");
-        const foundDevice = systemRes.data.find((d) => d._id === id);
-        if (!foundDevice) throw new Error("Device not found");
-        setDevice(foundDevice);
-
-        const res = await axios.get(`http://localhost:5000/api/tasks/${foundDevice.machine_id}`);
-        if (res.data.success && res.data.data.length) {
-          setTasks(res.data.data[0]);
-        } else {
-          setTasks({ applications: [], background_processes: [] });
-        }
-      } catch (err) {
-        console.error(err);
-        setError("Failed to fetch task manager data.");
-      } finally {
+    // Emit 'get_data' with a callback
+    socket.emit("get_data", { type: "task_info", agentId }, (data) => {
+      if (!data || !data[0]?.data) {
+        setError("No task info received for this agent.");
         setLoading(false);
+        return;
       }
-    };
 
-    fetchTasks();
-  }, [id]);
+      const doc = data[0]; // fetchData returns an array
+
+      setDevice({
+        hostname: doc.device?.hostname || `Agent ${doc.agentId}`,
+        os_type: doc.device?.os_type,
+        os_version: doc.device?.os_version,
+        machine_id: doc.agentId
+      });
+
+      setTasks({
+        applications: doc.data.applications || [],
+        background_processes: doc.data.background_processes || [],
+      });
+
+      setLoading(false);
+    });
+
+    // Handle socket connection errors
+    socket.on("connect_error", (err) => {
+      console.error("Socket error:", err);
+      setError("Failed to connect to real-time service.");
+      setLoading(false);
+    });
+
+    return () => {
+      socket.off("connect_error");
+    };
+  }, [agentId]);
 
   if (loading) return <div className="pc-container">Loading Task Manager...</div>;
   if (error) return <div className="pc-container">{error}</div>;
@@ -72,11 +85,11 @@ const TaskManager = () => {
           <div className="table-body">
             {tasks.applications.length ? (
               tasks.applications.map((app) => (
-                <div key={app.pid} className="task-row">
-                  <span className="task-name">{app.name}</span>
+                <div key={app.pid + app.name} className="task-row">
+                  <span className="task-name">{app.name} {app.title ? `- ${app.title}` : ""}</span>
                   <span>{app.pid}</span>
-                  <span>{app.cpu}%</span>
-                  <span>{app.memory}%</span>
+                  <span>{app.cpu_percent}%</span>
+                  <span>{app.memory_percent}%</span>
                 </div>
               ))
             ) : (
@@ -101,11 +114,11 @@ const TaskManager = () => {
           <div className="table-body">
             {tasks.background_processes.length ? (
               tasks.background_processes.map((proc) => (
-                <div key={proc.pid} className="task-row">
+                <div key={proc.pid + proc.name} className="task-row">
                   <span className="task-name">{proc.name}</span>
                   <span>{proc.pid}</span>
-                  <span>{proc.cpu}%</span>
-                  <span>{proc.memory}%</span>
+                  <span>{proc.cpu_percent}%</span>
+                  <span>{proc.memory_percent}%</span>
                 </div>
               ))
             ) : (

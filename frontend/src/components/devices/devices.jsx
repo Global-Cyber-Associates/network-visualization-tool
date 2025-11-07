@@ -1,57 +1,69 @@
 // src/components/Devices.jsx
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import './devices.css';
 import Sidebar from "../navigation/sidenav.jsx";
+import socket from "../../utils/socket.js"; // your socket connection
+import './devices.css';
 
 const Devices = () => {
-  const [devices, setDevices] = useState([]);
+  const [agents, setAgents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchDevices = async () => {
-      try {
-        const res = await axios.get("http://localhost:5000/api/system");
-        setDevices(Array.isArray(res.data) ? res.data : []);
-      } catch (err) {
-        console.error(err);
-        setError("Failed to load devices.");
-      } finally {
-        setLoading(false);
+    // Request agents from socket
+    socket.emit("get_data", { type: "agents" }, (response) => {
+      if (response?.error) {
+        setError(response.error);
+      } else {
+        // Ensure it is always an array
+        setAgents(Array.isArray(response) ? response : []);
       }
-    };
-    fetchDevices();
+      setLoading(false);
+    });
+
+    // Listen for real-time agent updates
+    socket.on("agent_update", (updatedAgent) => {
+      setAgents((prev) => {
+        const idx = prev.findIndex(a => a.agentId === updatedAgent.agentId);
+        if (idx >= 0) {
+          prev[idx] = updatedAgent;
+          return [...prev];
+        } else {
+          return [...prev, updatedAgent];
+        }
+      });
+    });
+
+    return () => socket.off("agent_update");
   }, []);
 
-  if (loading) return <div className="devices-container">Loading devices...</div>;
+  if (loading) return <div className="devices-container">Loading agents...</div>;
   if (error) return <div className="devices-container">{error}</div>;
-  if (!devices.length) return <div className="devices-container">No devices found.</div>;
+  if (!agents.length) return <div className="devices-container">No agents connected.</div>;
 
   return (
     <div className="device-page">
       <Sidebar />
       <div className="devices-container">
-        <h1 className="devices-title">Connected Devices</h1>
+        <h1 className="devices-title">Connected Agents ({agents.length})</h1>
 
         <div className="device-list">
-          {devices.map(device => (
+          {agents.map(agent => (
             <div
-              key={device._id}
+              key={agent.agentId}
               className="device-card"
-              onClick={() => navigate(`/devices/${device._id}`)}
+              onClick={() => navigate(`/devices/${agent.agentId}`)}
               style={{ cursor: "pointer" }}
             >
               {/* Left: Icon and basic info */}
               <div className="device-left">
                 <div className="device-icon">🖥️</div>
                 <div className="device-info-wrapper">
-                  <div className="device-name">{device.hostname}</div>
+                  <div className="device-name">Agent ID: {agent.agentId}</div>
                   <div className="device-info">
-                    <p>{device.os_type} {device.os_version}</p>
-                    <p>Machine ID: {device.machine_id}</p>
+                    <p>IP: {agent.ip || "unknown"}</p>
                   </div>
                 </div>
               </div>
@@ -62,7 +74,7 @@ const Devices = () => {
                   className="action-btn"
                   onClick={(e) => {
                     e.stopPropagation();
-                    alert(`Disconnect ${device.hostname}`);
+                    alert(`Disconnect ${agent.agentId}`);
                   }}
                 >
                   Disconnect
@@ -72,7 +84,7 @@ const Devices = () => {
                   className="action-btn"
                   onClick={(e) => {
                     e.stopPropagation();
-                    navigate(`/tasks/${device._id}`);
+                    navigate(`/tasks/${agent.agentId}`);
                   }}
                 >
                   Task Manager
@@ -82,7 +94,7 @@ const Devices = () => {
                   className="action-btn"
                   onClick={(e) => {
                     e.stopPropagation();
-                    alert(`Scan ${device.hostname}`);
+                    alert(`Scan ${agent.agentId}`);
                   }}
                 >
                   Scan

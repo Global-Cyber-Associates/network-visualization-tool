@@ -1,8 +1,7 @@
-
+/* ===== Sidebar ===== */
 .sidebar {
   top: 0;
   left: 0;
-  width: 240px;
   height: 100vh;
   background: #0b1e2d;
   border-right: 2px solid #1b263b;
@@ -10,9 +9,21 @@
   display: flex;
   flex-direction: column;
   padding: 20px 15px;
-  transition: left 0.3s ease-in-out;
+  transition: width 0.3s ease-in-out, left 0.3s ease;
+  z-index: 1000;
+  overflow-y: auto;
 }
 
+.sidebar.open {
+  width: 240px;
+}
+
+.sidebar.closed {
+  width: 0;
+  padding: 0;
+   ;
+  border-right: none;
+}
 
 .sidebar-title {
   font-size: 1.4rem;
@@ -26,7 +37,6 @@
   list-style: none;
   padding: 0;
   margin: 0;
-  flex-grow: 1;
 }
 
 .sidebar-nav li {
@@ -57,19 +67,17 @@
   box-shadow: 0 0 10px rgba(0, 119, 182, 0.4);
 }
 
-/* ===============================
-   Main Content Adjustment
-=============================== */
+/* ===== Main Content ===== */
 .main-content {
   flex: 1;
-  margin-left: 240px;
   padding: 25px;
-  transition: margin-left 0.3s ease-in-out;
+  min-height: 100vh;
+  transition: margin-left 0.3s ease;
+  background: #0b1e2d;
+  color: #fff;
 }
 
-/* ===============================
-   Mobile Toggle Button
-=============================== */
+/* ===== Toggle Button ===== */
 .sidebar-toggle {
   position: fixed;
   top: 15px;
@@ -89,37 +97,30 @@
   color: #fff;
 }
 
-/* ===============================
-   Mobile Behavior
-=============================== */
-@media (max-width: 768px) {
-  .sidebar {
-    left: -260px;
-    width: 240px;
-    box-shadow: 3px 0 12px rgba(0, 0, 0, 0.3);
-  }
-
-  .sidebar.open {
-    left: 0;
-  }
-
-  .main-content {
-    margin-left: 0;
-  }
-}
-
-/* ===============================
-   Scrollbar (optional styling)
-=============================== */
+/* ===== Scrollbar ===== */
 .sidebar::-webkit-scrollbar {
   width: 6px;
 }
-
 .sidebar::-webkit-scrollbar-thumb {
   background: #457b9d;
   border-radius: 3px;
 }
-
 .sidebar::-webkit-scrollbar-thumb:hover {
   background: #0077b6;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+  .sidebar {
+    left: -260px;
+  }
+
+  .sidebar.open {
+    left: 0;
+    width: 240px;
+  }
+
+  .main-content {
+    margin-left: 0 !important;
+  }
 }

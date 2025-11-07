@@ -1,70 +1,57 @@
-# main.py
-import json
-import threading
 import time
-import os
-from dotenv import load_dotenv
+import traceback
 
-from functions.ports import scan_ports
-from functions.sender import send_scan_results, set_base_api_url
 from functions.system import get_system_info
+from functions.ports import scan_ports
 from functions.taskmanager import collect_process_info
 from functions.installed_apps import get_installed_apps
-from functions.usbMonitor import monitor_usb_devices
+from functions.usbMonitor import get_usb_devices_once
+from functions.sender import send_data
 
-load_dotenv()
 
 def run_scans():
-    # --- 1. Port Scan ---
-    target_ip = "127.0.0.1"
-    port_range = "1-1024"
-    print("\n[*] Scanning localhost ports...\n")
-    port_results = scan_ports(target_ip, port_range)
-    print("[*] Port Scan Results:\n", json.dumps(port_results, indent=2))
-    send_scan_results(port_results, endpoint_path="ports")
+    print("[⚙️] Running all scans...")
 
-    print("\n[*] Collecting system information...\n")
-    system_data = get_system_info()
-    print("[*] System Information:\n", json.dumps(system_data, indent=2))
-    send_scan_results(system_data, endpoint_path="system")
-
-    device_id = system_data.get("machine_id") or system_data.get("hostname") or "unknown-device"
-
-    # --- 3. Installed Apps ---
-    print("\n[*] Collecting installed applications...\n")
-    apps = get_installed_apps()
-    send_scan_results({"deviceId": device_id, "applications": apps}, endpoint_path="installed-apps")
-
-    # --- 4. Task Manager ---
-    print("\n[*] Collecting task manager data...\n")
-    task_data = collect_process_info()
-    task_payload = {
-        "deviceId": device_id,
-        "applications": task_data.get("applications", []),
-        "background_processes": task_data.get("background_processes", [])
-    }
-    print("[*] Task Manager Data Payload:\n", json.dumps(task_payload, indent=2))
-    send_scan_results(task_payload, endpoint_path="tasks")
-
-    print("\n✅ All scan data collected and sent to backend.\n")
-
-
-def main():
-    # --- Run initial scans ---
-    run_scans()
-
-    # --- Start USB Monitor Thread ---
-    print("[*] Starting strict USB monitor in background...\n")
-    usb_thread = threading.Thread(target=monitor_usb_devices, daemon=True)
-    usb_thread.start()
-
-    # --- Keep Agent Alive ---
     try:
-        while True:
-            time.sleep(10)
-    except KeyboardInterrupt:
-        print("Shutting down agent.")
+        # --- 1. System Info ---
+        print("[🧠] Collecting system information...")
+        sys_info = get_system_info()
+        send_data("system_info", sys_info)
+        print("    ✔ System info collected and saved.")
+
+        # --- 2. Port Scan ---
+        print("[🌐] Scanning ports 1-1024 on localhost...")
+        port_data = scan_ports("127.0.0.1", "1-1024")
+        send_data("port_scan", port_data)
+        print("    ✔ Port scan completed and saved.")
+
+        # --- 3. Task Manager ---
+        print("[🧩] Collecting running processes...")
+        process_data = collect_process_info()
+        send_data("task_info", process_data)
+        print("    ✔ Process info collected and saved.")
+
+        # --- 4. Installed Apps ---
+        print("[💻] Gathering installed applications...")
+        app_data = get_installed_apps()
+        send_data("installed_apps", {"apps": app_data, "count": len(app_data)})
+        print(f"    ✔ Found {len(app_data)} installed apps.")
+
+        # --- 5. USB Devices ---
+        print("[🔌] Checking connected USB devices...")
+        usb_data = get_usb_devices_once()
+        send_data("usb_devices", usb_data)
+        print("    ✔ USB device data collected and saved.")
+
+        print("\n✅ All scans completed successfully.\n")
+
+    except Exception as e:
+        print(f"[❌] Error during scans: {e}")
+        print(traceback.format_exc())
 
 
 if __name__ == "__main__":
-    main()
+    while True:
+        run_scans()
+        print("[⏳] Waiting 60 seconds before next scan...\n")
+        time.sleep(60)

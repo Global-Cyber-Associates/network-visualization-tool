@@ -3,7 +3,7 @@ import axios from "axios";
 import Sidebar from "../navigation/sidenav";
 import "./usb.css";
 
-const API_BASE = "http://localhost:5000/api/usb";
+const API_BASE = import.meta.env.VITE_BACKEND_URL;
 
 const UsbControl = () => {
   const [devices, setDevices] = useState({
@@ -33,7 +33,6 @@ const UsbControl = () => {
       });
     } catch (err) {
       console.error("Fetch error:", err);
-      alert("Failed to fetch USB devices");
     } finally {
       setLoading(false);
     }
@@ -62,7 +61,6 @@ const UsbControl = () => {
       await fetchDevices();
     } catch (err) {
       console.error(`${action} failed:`, err);
-      alert(`Action failed: ${err.response?.data?.message || err.message}`);
     } finally {
       setLoading(false);
     }

@@ -1,9 +1,7 @@
 .visualizer-page {
   display: flex;
-  min-height: 100vh;
-  background: radial-gradient(circle at top left, #0b1e2d 0%, #1b263b 100%);
-  font-family: "Segoe UI", "Roboto", sans-serif;
-  color: #dfe7f1;
+  height: 100vh;
+  color: #1e1e2f;
   overflow: hidden;
 }
 
@@ -11,198 +9,132 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  position: relative;
+  padding: 10px;
 }
 
 .visualizer-header {
-  padding: 16px 24px;
-  background: #1b263b;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-  border-bottom: 1px solid #0b1e2d;
   display: flex;
   justify-content: space-between;
+  background-color: rgb(24, 35, 62);
+  padding: 0px 10px;
   align-items: center;
-  z-index: 10;
+  border-radius: 3px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  color: white;
 }
 
-.visualizer-header h1 {
-  margin: 0;
-  font-size: 2rem;
-  color: #a8dadc;
-  letter-spacing: 1px;
+.floor-manager {
+  display: flex;
+  gap: 10px;
+  align-items: center;
 }
 
-.visualizer-canvas {
+.floor-tab {
+  background: #eaf1ff;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.floor-tab.active {
+  background: #0078d4;
+  color: white;
+}
+
+.add-floor-btn {
+  background: #00b294;
+  border: none;
+  color: white;
+  border-radius: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  font-weight: 600;
+  font-size: 1.2rem;
+  color: #0078d4;
+}
+
+.floor-grid-container {
   flex: 1;
   position: relative;
-  overflow: visible;
+  margin-top: 10px;
+  background: #fafcff;
+  border-radius: 12px;
+  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.floor-controls {
   display: flex;
-  justify-content: center;
   align-items: center;
+  gap: 10px;
+  padding: 10px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
 }
 
-/* Links */
-.wire-path.alive {
-  fill: none;
-  stroke: #00bfff;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-dasharray: 8 6;
-  animation: dashMove 2s linear infinite, pulseLink 3s ease-in-out infinite alternate;
-}
-
-@keyframes dashMove {
-  0% { stroke-dashoffset: 0; }
-  100% { stroke-dashoffset: 14; }
-}
-
-@keyframes pulseLink {
-  0% { stroke-opacity: 0.6; }
-  50% { stroke-opacity: 1; }
-  100% { stroke-opacity: 0.6; }
-}
-
-/* Nodes */
-.node-circle {
-  cursor: pointer;
-  stroke: #702828;
-  stroke-width: 2;
-  filter: drop-shadow(0 0 6px rgba(0,191,255,0.6));
-  animation: floatNode 6s ease-in-out infinite, nodePulse 2s ease-in-out infinite alternate;
-}
-
-.node-circle.hub {
-  filter: drop-shadow(0 0 12px rgba(255,184,71,0.9));
-}
-
-@keyframes floatNode {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-6px); }
-  100% { transform: translateY(0px); }
-}
-
-@keyframes nodePulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
-}
-
-/* Branching lines */
-.branch-line {
-  opacity: 0.6;
-  animation: branchFlicker 1.2s infinite alternate;
-}
-
-@keyframes branchFlicker {
-  0% { opacity: 0.3; }
-  50% { opacity: 0.8; }
-  100% { opacity: 0.3; }
-}
-
-/* Node labels */
-.node-label {
-  background: rgba(27,38,59,0.85);
-  border-radius: 10px;
-  padding: 8px 14px;
-  text-align: center;
-  font-size: 0.9rem;
+.floor-controls button {
+  background: #0078d4;
   color: #fff;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-  backdrop-filter: blur(4px);
-  transition: transform 0.3s, box-shadow 0.3s;
-}
-
-.node-label .node-name {
-  font-weight: 700;
-  color: #ffffff;
-  margin-bottom: 2px;
-}
-
-.node-label .node-ip {
-  font-size: 0.8rem;
-  color: #a8dadc;
-  margin-bottom: 2px;
-}
-
-.node-label .node-status {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #43d9ad;
-}
-
-/* Toggle button */
-.desc-toggle-btn {
-  padding: 6px 14px;
-  background: #00bfff;
-  color: #0b1e2d;
-  font-weight: 600;
   border: none;
   border-radius: 6px;
+  padding: 6px 12px;
   cursor: pointer;
-  transition: transform 0.3s, background 0.3s;
 }
 
-.desc-toggle-btn:hover {
-  transform: scale(1.05);
-  background: #fcfcfc;
-}
-
-/* === Add this block at the very end === */
-
-/* Container that holds the vis-network graph */
-.vis-network-canvas {
-  position: absolute;
-  top: 0;
-  left: 0;
+.floor-grid {
+  position: relative;
   width: 100%;
-  height: 100%;
-  border-radius: 12px;
-  z-index: 2;
-  cursor: grab;
+  height: calc(100% - 50px);
+  background-image: linear-gradient(to right, #e0e0e0 1px, transparent 1px),
+    linear-gradient(to bottom, #e0e0e0 1px, transparent 1px);
 }
 
-.vis-network-canvas:active {
-  cursor: grabbing;
+.device-box {
+  background: #ffffff;
+  border: 1.5px solid #0078d4;
+  border-radius: 10px;
+  text-align: center;
+  padding: 10px;
+  box-shadow: 0 2px 6px rgba(0, 120, 212, 0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: 0.2s;
 }
 
-/* Optional: dim network lines slightly for your glowing theme */
-.vis-network .vis-edge {
-  stroke: rgba(158, 187, 197, 0.6) !important;
+.device-box:hover {
+  transform: scale(1.05);
+  background: #f0f7ff;
 }
 
-.vis-network .vis-node {
-  filter: drop-shadow(0 0 6px rgba(0, 191, 255, 0.5));
-  transition: transform 0.2s ease-in-out;
+.device-box.active {
+  border-color: #0078d4;
 }
 
-.vis-network .vis-node:hover {
-  transform: scale(1.08);
+.device-box.no-agent {
+  border-color: #ff4444;
+  background: #fff1f1;
 }
 
-/* Title alignment inside header */
-.visualizer-header h1 {
-  font-size: 1.8rem;
-  color: #d4dedf;
+.device-icon {
+  font-size: 28px;
+  color: #0078d4;
 }
 
-.run-btn {
-  background-color: #00bfff;
-  color: rgb(14, 7, 7);
-  padding: 8px 14px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
+.device-name {
+  margin-top: 4px;
+  font-size: 12px;
   font-weight: 600;
-  margin-right: 10px;
-  transition: background 0.3s;
-}
-
-.run-btn:hover {
-  background-color: #009acd;
-}
-
-.status-msg {
-  margin-top: 8px;
-  font-size: 14px;
-  color: #8be9fd;
+  color: #333;
 }

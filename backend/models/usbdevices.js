@@ -1,18 +1,19 @@
 import mongoose from "mongoose";
 
-const UsbDeviceSchema = new mongoose.Schema(
-  {
-    username: { type: String, required: true },
-    model: { type: String },
-    pnpid: { type: String, unique: true, required: true },
-    drive: { type: String },
-    status: {
-      type: String,
-      enum: ["pending", "approved", "blocked"],
-      default: "pending",
-    },
-  },
-  { timestamps: true }
-);
+const usbDeviceSchema = new mongoose.Schema({
+  vendor_id: String,
+  product_id: String,
+  description: String,
+  serial_number: String,
+});
 
-export default mongoose.model("UsbDevice", UsbDeviceSchema);
+const usbDevicesSchema = new mongoose.Schema({
+  agentId: { type: String, required: true, index: true, ref: "Agent" },
+  timestamp: { type: String, required: true },
+  type: { type: String, default: "usb_devices" },
+  data: {
+    connected_devices: [usbDeviceSchema],
+  },
+});
+
+export default mongoose.model("USBDevices", usbDevicesSchema);

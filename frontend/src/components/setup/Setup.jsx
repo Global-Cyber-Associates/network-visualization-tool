@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import "./Setup.css";
 
+const backendUrl = import.meta.env.VITE_BACKEND_URL;
+
 const Setup = () => {
   const [mongoURI, setMongoURI] = useState("");
   const [adminUsername, setAdminUsername] = useState("");
@@ -14,7 +16,7 @@ const Setup = () => {
     setMessage("");
 
     try {
-      const res = await fetch("http://localhost:5000/api/setup", {
+      const res = await fetch(`${backendUrl}/api/setup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mongoURI, adminUsername, adminPassword }),

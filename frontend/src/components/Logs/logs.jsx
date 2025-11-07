@@ -2,13 +2,15 @@ import React, { useEffect, useState } from "react";
 import "./logs.css";
 import Sidebar from "../navigation/sidenav.jsx";
 
+const backendUrl = import.meta.env.VITE_BACKEND_URL;
+
 const Logs = () => {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const fetchLogs = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/logs");
+      const res = await fetch(`${backendUrl}/logs`);
       const data = await res.json();
 
       if (data.success && Array.isArray(data.logs)) {

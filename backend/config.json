@@ -1,3 +1,6 @@
+
 {
-  "mongoURI": "mongodb+srv://sv2154_db_user:sugu@cluster0.7wuud4w.mongodb.net/gcass"
+  "mongo_uri": "mongodb+srv://sv2154_db_user:sugu@cluster0.7wuud4w.mongodb.net/testingnew",
+  "socket_port": 5000,
+  "cors_origin": "*"
 }
